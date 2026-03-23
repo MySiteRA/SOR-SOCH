@@ -64,26 +64,63 @@ export default function AdminSchedulePage() {
           const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
 
           const scheduleItems: ScheduleItem[] = [];
-          const days = ['Понедельник', 'Вторник', 'Среда', 'Четверг', 'Пятница', 'Суббота'];
+          const daysLower = ['понедельник', 'вторник', 'среда', 'четверг', 'пятница', 'суббота'];
+          const exactDaysStr = ['Понедельник', 'Вторник', 'Среда', 'Четверг', 'Пятница', 'Суббота'];
           
-          // Предполагаем, что первая строка содержит заголовки
-          // Формат: Урок | Понедельник | Вторник | Среда | Четверг | Пятница | Суббота
-          for (let rowIndex = 1; rowIndex < jsonData.length; rowIndex++) {
-            const row = jsonData[rowIndex] as any[];
-            if (!row || row.length < 2) continue;
+          let headerRowIndex = -1;
+          const dayColumns = new Map<number, string>(); // colIndex -> DayName
+          let lessonNumColIndex = 0; // Default
 
-            const lessonNumber = parseInt(row[0]) || rowIndex;
+          // Ищем строку с заголовками (днями недели)
+          for (let i = 0; i < Math.min(jsonData.length, 10); i++) {
+            const row = jsonData[i] as any[];
+            if (!row) continue;
             
-            // Обрабатываем каждый день недели
-            for (let dayIndex = 1; dayIndex < Math.min(row.length, 7); dayIndex++) {
-              const cellValue = row[dayIndex];
-              if (!cellValue || typeof cellValue !== 'string') continue;
+            let foundDays = 0;
+            for (let j = 0; j < row.length; j++) {
+              const cellStr = String(row[j] || '').toLowerCase().trim();
+              const dayMatch = daysLower.findIndex(d => cellStr.includes(d));
+              if (dayMatch !== -1) {
+                dayColumns.set(j, exactDaysStr[dayMatch]);
+                foundDays++;
+              } else if (cellStr.includes('урок') || cellStr.includes('№') || cellStr.includes('номер') || cellStr === 'время') {
+                lessonNumColIndex = j;
+              }
+            }
+            if (foundDays >= 2) {
+              headerRowIndex = i;
+              break;
+            }
+          }
 
-              const dayName = days[dayIndex - 1];
+          // Если заголовки не найдены, используем стандартный шаблон из инструкции
+          if (dayColumns.size === 0) {
+            dayColumns.set(1, 'Понедельник');
+            dayColumns.set(2, 'Вторник');
+            dayColumns.set(3, 'Среда');
+            dayColumns.set(4, 'Четверг');
+            dayColumns.set(5, 'Пятница');
+            dayColumns.set(6, 'Суббота');
+          }
+
+          const startRow = headerRowIndex !== -1 ? headerRowIndex + 1 : 1;
+
+          // Парсим данные начиная со строки после заголовка
+          for (let rowIndex = startRow; rowIndex < jsonData.length; rowIndex++) {
+            const row = jsonData[rowIndex] as any[];
+            if (!row || row.length === 0) continue;
+
+            const lessonRaw = row[lessonNumColIndex];
+            const lessonNumber = parseInt(String(lessonRaw)) || (rowIndex - startRow + 1);
+
+            for (const [colIndex, dayName] of Array.from(dayColumns.entries())) {
+              const cellValue = row[colIndex];
+              if (cellValue === undefined || cellValue === null || cellValue === '') continue;
+
+              const cellValueStr = String(cellValue).trim();
+              if (cellValueStr === '') continue;
               
-              // Парсим содержимое ячейки
-              // Ожидаемый формат: "Предмет\nУчитель\nКабинет\n09:00-09:45"
-              const lines = cellValue.split('\n').map(line => line.trim()).filter(line => line);
+              const lines = cellValueStr.split('\n').map(line => line.trim()).filter(line => line);
               
               if (lines.length >= 1) {
                 const subject = lines[0] || '';
@@ -136,8 +173,10 @@ export default function AdminSchedulePage() {
             }
           }
 
+          console.log(`Parsed ${scheduleItems.length} items from Excel`);
           resolve(scheduleItems);
         } catch (error) {
+          console.error("Parse Excel Failed: ", error);
           reject(new Error('Ошибка парсинга Excel файла'));
         }
       };

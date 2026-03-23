@@ -1,8 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ArrowLeft, Users, Crown, Clock, MessageCircle, X, AlertTriangle, Shuffle, Settings, Plus, Minus, Eye, EyeOff } from 'lucide-react';
+import { ArrowLeft, Users, Crown, X, AlertTriangle, Shuffle, Settings, Plus, Minus } from 'lucide-react';
 import { useNavigate, useParams, useLocation } from 'react-router-dom';
-import { useLanguage } from '../contexts/LanguageContext';
 import LoadingSpinner from '../components/LoadingSpinner';
 import FirebaseTruthOrDareGame from '../components/games/FirebaseTruthOrDareGame';
 import FirebaseQuizGame from '../components/games/FirebaseQuizGame';
@@ -18,7 +17,6 @@ import {
   updateGameSettings,
   validateGameSettings,
   getGameTypeName,
-  getPlayerNumber,
   type FirebaseGame,
   type FirebasePlayer
 } from '../services/firebaseGameService';
@@ -36,12 +34,12 @@ interface GameSettings {
 }
 
 export default function StudentGamePage() {
-  const { t } = useLanguage();
   const navigate = useNavigate();
   const { gameId } = useParams<{ gameId: string }>();
   const location = useLocation();
   
-  const { student, className } = location.state || {};
+  const [student, setStudent] = useState<Student | null>(location.state?.student || null);
+  const [className, setClassName] = useState<string>(location.state?.className || '');
   
   const [game, setGame] = useState<FirebaseGame | null>(null);
   const [players, setPlayers] = useState<{ [userId: string]: FirebasePlayer }>({});
@@ -54,24 +52,13 @@ export default function StudentGamePage() {
     mafia: 1,
     doctor: 1,
     detective: 1,
-    anonymity: true,
-    difficulty: 'medium'
+    anonymity: true
   });
   const [settingsLoading, setSettingsLoading] = useState(false);
 
-  useEffect(() => {
-    if (!student || !gameId) {
-      navigate('/student-games', { replace: true });
-      return;
-    }
 
-    // Проверяем валидность ключа студента
-    validateStudentKey(student.id);
 
-    setupSubscriptions();
-  }, [gameId, student]);
-
-  const validateStudentKey = async (studentId: string) => {
+  const validateStudentKey = useCallback(async (studentId: string) => {
     try {
       const isValid = await checkStudentKeyValidity(studentId);
       
@@ -87,16 +74,16 @@ export default function StudentGamePage() {
       console.error('Error validating student key:', error);
       // В случае ошибки проверки, не разлогиниваем
     }
-  };
+  }, [navigate]);
 
   // Загружаем настройки игры при инициализации
   useEffect(() => {
     if (game?.settings) {
       setGameSettings(prev => ({ ...prev, ...game.settings }));
     }
-  }, [game?.settings]);
+  }, [game?.settings, setGameSettings]);
 
-  const setupSubscriptions = () => {
+  const setupSubscriptions = useCallback(() => {
     if (!gameId) return;
 
     let unsubscribeGame: (() => void) | null = null;
@@ -124,15 +111,43 @@ export default function StudentGamePage() {
     // Подписываемся на обновления игроков
     unsubscribePlayers = subscribeToGamePlayers(gameId, (playersData) => {
       setPlayers(playersData);
-      const playerJoined = Object.keys(playersData).includes(student.id);
-      setIsJoined(playerJoined);
+      if (student) {
+        const playerJoined = Object.keys(playersData).includes(student.id);
+        setIsJoined(playerJoined);
+      }
     });
 
     return () => {
       if (unsubscribeGame) unsubscribeGame();
       if (unsubscribePlayers) unsubscribePlayers();
     };
-  };
+  }, [gameId, student, navigate]);
+
+  useEffect(() => {
+    if (!student) {
+      const saved = localStorage.getItem('studentDashboardData');
+      if (saved) {
+        const data = JSON.parse(saved);
+        setStudent(data.student);
+        setClassName(data.className);
+      } else {
+        navigate('/student-games', { replace: true });
+        return;
+      }
+    }
+
+    if (!gameId) {
+      navigate('/student-games', { replace: true });
+      return;
+    }
+
+    // Проверяем валидность ключа студента
+    if (student) {
+      validateStudentKey(student.id);
+    }
+
+    setupSubscriptions();
+  }, [gameId, student, navigate, setupSubscriptions, validateStudentKey]);
 
   const handleSettingsUpdate = async () => {
     if (!gameId || !game) return;
@@ -158,7 +173,8 @@ export default function StudentGamePage() {
       await updateGameSettings(gameId, gameSettings);
       setShowSettings(false);
       
-    } catch (err) {
+    } catch (error) {
+      console.error('Error updating settings:', error);
       setError('Ошибка обновления настроек');
     } finally {
       setSettingsLoading(false);
@@ -179,7 +195,8 @@ export default function StudentGamePage() {
       setError(null);
       await joinGame(gameId, student.id, student.name);
       setIsJoined(true);
-    } catch (err) {
+    } catch (error) {
+      console.error('Error joining game:', error);
       setError('Ошибка присоединения к игре');
     } finally {
       setActionLoading(null);
@@ -194,7 +211,8 @@ export default function StudentGamePage() {
       setError(null);
       await leaveGame(gameId, student.id);
       setIsJoined(false);
-    } catch (err) {
+    } catch (error) {
+      console.error('Error leaving game:', error);
       setError('Ошибка выхода из игры');
     } finally {
       setActionLoading(null);
@@ -209,8 +227,8 @@ export default function StudentGamePage() {
       setError(null);
       
       await startGame(gameId);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Ошибка запуска игры');
+    } catch (error) {
+      setError(error instanceof Error ? error.message : 'Ошибка запуска игры');
     } finally {
       setActionLoading(null);
     }
@@ -227,7 +245,8 @@ export default function StudentGamePage() {
       setActionLoading('cancel');
       setError(null);
       await cancelGame(gameId);
-    } catch (err) {
+    } catch (error) {
+      console.error('Error cancelling game:', error);
       setError('Ошибка отмены игры');
     } finally {
       setActionLoading(null);
@@ -600,46 +619,47 @@ export default function StudentGamePage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
-      {/* Header */}
-      <header className="bg-white shadow-sm border-b">
+    <div className="min-h-screen pb-safe">
+      {/* Premium Header */}
+      <header className="sticky top-0 z-50 glass border-b border-white/20">
         <div className="container mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-4">
-              <button
+              <motion.button
                 onClick={() => navigate('/student-games')}
-                className="flex items-center space-x-2 text-blue-600 hover:text-blue-700 font-medium"
+                whileHover={{ scale: 1.1, x: -5 }}
+                whileTap={{ scale: 0.9 }}
+                className="w-10 h-10 flex items-center justify-center bg-white rounded-xl shadow-sm border border-slate-100 text-slate-600 hover:text-indigo-600 transition-all font-bold"
               >
-                <ArrowLeft className="w-5 h-5" />
-                <span>К играм</span>
-              </button>
+                <ArrowLeft className="w-6 h-6" />
+              </motion.button>
               <div>
-                <h1 className="text-2xl font-bold text-gray-900">
+                <h1 className="text-xl font-black text-slate-800 tracking-tight leading-none mb-1">
                   {game ? getGameTypeName(game.gameType) : 'Игра'}
                 </h1>
-                <p className="text-gray-600">{className}</p>
+                <p className="text-[10px] font-black uppercase tracking-widest text-indigo-500">
+                  {className}
+                </p>
               </div>
             </div>
             
-            <div className="flex items-center space-x-4">
-              <div className="flex items-center space-x-2 text-sm text-gray-600">
-                <Users className="w-4 h-4" />
-                <span>{getPlayerCount()}/{game?.maxPlayers || 0}</span>
+            <div className="flex items-center space-x-3">
+              <div className="bg-slate-50 border border-slate-100 px-3 py-2 rounded-2xl flex items-center space-x-2">
+                <Users className="w-4 h-4 text-indigo-500" />
+                <span className="font-black text-slate-700 text-sm">{getPlayerCount()}/{game?.maxPlayers || 0}</span>
               </div>
               
-              <span className={`px-3 py-1 rounded-full text-sm font-medium ${
+              <span className={`px-4 py-2 rounded-2xl text-[10px] font-black uppercase tracking-widest ${
                 game.status === 'waiting' 
-                  ? 'bg-yellow-100 text-yellow-800' 
-                  : game.status === 'started'
-                    ? 'bg-green-100 text-green-800'
-                    : game.status === 'active'
-                      ? 'bg-green-100 text-green-800'
+                  ? 'bg-amber-50 text-amber-600 border border-amber-100' 
+                  : game.status === 'active'
+                    ? 'bg-emerald-50 text-emerald-600 border border-emerald-100'
                     : game.status === 'cancelled'
-                      ? 'bg-red-100 text-red-800'
-                    : 'bg-gray-100 text-gray-800'
+                      ? 'bg-rose-50 text-rose-600 border border-rose-100'
+                    : 'bg-slate-50 text-slate-600 border border-slate-100'
               }`}>
                 {game.status === 'waiting' && 'Ожидание'}
-                {(game.status === 'started' || game.status === 'active') && 'В процессе'}
+                {game.status === 'active' && 'В процессе'}
                 {game.status === 'finished' && 'Завершена'}
                 {game.status === 'cancelled' && 'Отменена'}
               </span>
@@ -648,21 +668,19 @@ export default function StudentGamePage() {
         </div>
       </header>
 
-      <div className="container mx-auto px-4 py-8">
+      <div className="container mx-auto px-4 py-8 max-w-6xl animate-card-appear pb-24 md:pb-12">
         {/* Error Message */}
         {error && (
           <motion.div
-            initial={{ opacity: 0, y: -10 }}
+            initial={{ opacity: 0, y: -20 }}
             animate={{ opacity: 1, y: 0 }}
-            className="bg-red-100 border border-red-200 text-red-700 px-4 py-3 rounded-lg mb-6"
+            className="mb-8 p-4 bg-rose-500 text-white rounded-2xl shadow-lg shadow-rose-200 flex items-center justify-between font-bold"
           >
-            {error}
-            <button
-              onClick={() => setError(null)}
-              className="ml-2 text-red-500 hover:text-red-700"
-            >
-              ✕
-            </button>
+            <div className="flex items-center">
+               <AlertTriangle className="w-5 h-5 mr-3" />
+               {error}
+            </div>
+            <button onClick={() => setError(null)} className="p-2 hover:bg-white/20 rounded-lg transition-colors">✕</button>
           </motion.div>
         )}
 
@@ -671,29 +689,31 @@ export default function StudentGamePage() {
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            className="bg-white rounded-xl shadow-lg border border-gray-100 p-8 mb-8"
+            className="premium-card p-8 mb-8"
           >
             <div className="text-center">
               <div className="flex items-center justify-center space-x-4 mb-4">
-                <h2 className="text-2xl font-bold text-gray-900">Комната ожидания</h2>
+                <h2 className="text-2xl font-black text-slate-800 tracking-tight">Комната ожидания</h2>
                 {isGameCreator() && (
-                  <button
+                  <motion.button
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
                     onClick={() => setShowSettings(true)}
-                    className="flex items-center space-x-2 bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2 rounded-lg transition-colors"
+                    className="flex items-center space-x-2 bg-slate-50 hover:bg-indigo-50 text-slate-600 hover:text-indigo-600 px-4 py-2 rounded-2xl transition-colors border border-slate-100"
                   >
                     <Settings className="w-4 h-4" />
-                    <span>Настройки</span>
-                  </button>
+                    <span className="text-xs font-black uppercase tracking-widest">Настройки</span>
+                  </motion.button>
                 )}
               </div>
-              <p className="text-gray-600 mb-6">
+              <p className="text-slate-500 text-sm font-bold mb-6">
                 Ожидаем игроков... ({getPlayerCount()}/{game.maxPlayers})
               </p>
               
-              <div className="bg-blue-50 rounded-lg p-4 border border-blue-200 mb-6">
-                <div className="flex items-center justify-center space-x-2 text-blue-800">
+              <div className="premium-card p-4 border-indigo-100 bg-indigo-50/50 mb-8">
+                <div className="flex items-center justify-center space-x-2 text-indigo-700">
                   <Shuffle className="w-4 h-4" />
-                  <span className="text-sm font-medium">
+                  <span className="text-xs font-black uppercase tracking-widest">
                     При старте игры всем игрокам будут назначены случайные номера
                     {game.gameType === 'truth_or_dare' && gameSettings.anonymity === false && ' (имена будут видны)'}
                   </span>
@@ -708,21 +728,21 @@ export default function StudentGamePage() {
                     initial={{ opacity: 0, scale: 0.8 }}
                     animate={{ opacity: 1, scale: 1 }}
                     transition={{ delay: index * 0.1 }}
-                    className="bg-gray-50 rounded-lg p-4 text-center"
+                    className="premium-card p-5 text-center group hover:border-indigo-200"
                   >
-                    <div className="w-12 h-12 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-full flex items-center justify-center mx-auto mb-2">
-                      <span className="text-white font-bold">
+                    <div className="w-14 h-14 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-[1.5rem] flex items-center justify-center mx-auto mb-3 group-hover:scale-110 transition-transform duration-300 shadow-lg shadow-indigo-200">
+                      <span className="text-white font-black text-sm">
                         {player.name.split(' ').map(n => n[0]).slice(0, 2).join('')}
                       </span>
                     </div>
-                    <p className="text-sm font-medium text-gray-900 truncate">
+                    <p className="text-sm font-black text-slate-800 truncate tracking-tight">
                       {player.name}
                     </p>
                     {player.userId === game.creatorId && (
-                      <Crown className="w-4 h-4 text-yellow-500 mx-auto mt-1" />
+                      <Crown className="w-4 h-4 text-amber-500 mx-auto mt-1" />
                     )}
-                    <div className="text-xs text-gray-500 mt-1">
-                      Получит номер при старте
+                    <div className="text-[10px] font-black uppercase tracking-widest text-slate-400 mt-1">
+                      Получит номер
                     </div>
                   </motion.div>
                 ))}
@@ -731,12 +751,12 @@ export default function StudentGamePage() {
                 {Array.from({ length: game.maxPlayers - getPlayerCount() }).map((_, index) => (
                   <div
                     key={`empty-${index}`}
-                    className="bg-gray-100 rounded-lg p-4 text-center border-2 border-dashed border-gray-300"
+                    className="premium-card p-5 text-center border-2 border-dashed border-slate-200 bg-slate-50/50"
                   >
-                    <div className="w-12 h-12 bg-gray-200 rounded-full flex items-center justify-center mx-auto mb-2">
-                      <Users className="w-6 h-6 text-gray-400" />
+                    <div className="w-14 h-14 bg-slate-100 rounded-[1.5rem] flex items-center justify-center mx-auto mb-3">
+                      <Users className="w-6 h-6 text-slate-300" />
                     </div>
-                    <p className="text-xs text-gray-500">Ожидание</p>
+                    <p className="text-[10px] font-black uppercase tracking-widest text-slate-300">Свободно</p>
                   </div>
                 ))}
               </div>
@@ -750,10 +770,10 @@ export default function StudentGamePage() {
                       whileTap={{ scale: 0.98 }}
                       onClick={handleJoinGame}
                       disabled={actionLoading === 'join' || getPlayerCount() >= game.maxPlayers}
-                      className="bg-indigo-600 text-white px-8 py-3 rounded-xl hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-medium shadow-lg"
+                      className="w-full py-4 rounded-2xl font-black uppercase text-[10px] tracking-widest bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-xl shadow-indigo-100 hover:shadow-2xl disabled:opacity-50 disabled:cursor-not-allowed transition-all"
                     >
                       {actionLoading === 'join' ? (
-                        <div className="flex items-center space-x-2">
+                        <div className="flex items-center justify-center space-x-2">
                           <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
                           <span>Присоединение...</span>
                         </div>
@@ -771,10 +791,10 @@ export default function StudentGamePage() {
                       whileTap={{ scale: 0.98 }}
                       onClick={handleStartGame}
                       disabled={actionLoading === 'start'}
-                      className="bg-green-600 text-white px-8 py-3 rounded-xl hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-medium shadow-lg"
+                      className="w-full py-4 rounded-2xl font-black uppercase text-[10px] tracking-widest bg-gradient-to-r from-emerald-500 to-teal-600 text-white shadow-xl shadow-emerald-100 hover:shadow-2xl disabled:opacity-50 disabled:cursor-not-allowed transition-all"
                     >
                       {actionLoading === 'start' ? (
-                        <div className="flex items-center space-x-2">
+                        <div className="flex items-center justify-center space-x-2">
                           <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
                           <span>Запуск...</span>
                         </div>
@@ -788,15 +808,15 @@ export default function StudentGamePage() {
                       whileTap={{ scale: 0.98 }}
                       onClick={handleCancelGame}
                       disabled={actionLoading === 'cancel'}
-                      className="bg-red-600 text-white px-6 py-2 rounded-lg hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-medium"
+                      className="w-full py-3 rounded-2xl font-black uppercase text-[10px] tracking-widest bg-rose-50 text-rose-600 hover:bg-rose-100 border border-rose-200 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
                     >
                       {actionLoading === 'cancel' ? (
-                        <div className="flex items-center space-x-2">
-                          <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                        <div className="flex items-center justify-center space-x-2">
+                          <div className="w-4 h-4 border-2 border-rose-400 border-t-transparent rounded-full animate-spin" />
                           <span>Отмена...</span>
                         </div>
                       ) : (
-                        <div className="flex items-center space-x-2">
+                        <div className="flex items-center justify-center space-x-2">
                           <X className="w-4 h-4" />
                           <span>Отменить игру</span>
                         </div>
@@ -805,7 +825,7 @@ export default function StudentGamePage() {
                   </div>
                 ) : isJoined ? (
                   <div className="space-y-3">
-                    <div className="text-gray-600">
+                    <div className="text-slate-500 text-sm font-bold">
                       {getPlayerCount() < 2 
                         ? 'Ожидаем еще игроков...' 
                         : 'Ожидаем начала игры...'
@@ -817,11 +837,11 @@ export default function StudentGamePage() {
                       whileTap={{ scale: 0.98 }}
                       onClick={handleLeaveGame}
                       disabled={actionLoading === 'leave'}
-                      className="bg-orange-600 text-white px-6 py-2 rounded-lg hover:bg-orange-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-medium"
+                      className="w-full py-3 rounded-2xl font-black uppercase text-[10px] tracking-widest bg-amber-50 text-amber-600 hover:bg-amber-100 border border-amber-200 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
                     >
                       {actionLoading === 'leave' ? (
-                        <div className="flex items-center space-x-2">
-                          <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                        <div className="flex items-center justify-center space-x-2">
+                          <div className="w-4 h-4 border-2 border-amber-400 border-t-transparent rounded-full animate-spin" />
                           <span>Выход...</span>
                         </div>
                       ) : (
@@ -830,7 +850,7 @@ export default function StudentGamePage() {
                     </motion.button>
                   </div>
                 ) : (
-                  <div className="text-gray-600">
+                  <div className="text-slate-500 text-sm font-bold">
                     {getPlayerCount() < 2 
                       ? 'Ожидаем еще игроков...' 
                       : 'Ожидаем начала игры...'
@@ -845,15 +865,15 @@ export default function StudentGamePage() {
                     whileTap={{ scale: 0.98 }}
                     onClick={handleCancelGame}
                     disabled={actionLoading === 'cancel'}
-                    className="bg-red-600 text-white px-6 py-2 rounded-lg hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-medium"
+                    className="w-full py-3 rounded-2xl font-black uppercase text-[10px] tracking-widest bg-rose-50 text-rose-600 hover:bg-rose-100 border border-rose-200 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
                   >
                     {actionLoading === 'cancel' ? (
-                      <div className="flex items-center space-x-2">
-                        <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                      <div className="flex items-center justify-center space-x-2">
+                        <div className="w-4 h-4 border-2 border-rose-400 border-t-transparent rounded-full animate-spin" />
                         <span>Отмена...</span>
                       </div>
                     ) : (
-                      <div className="flex items-center space-x-2">
+                      <div className="flex items-center justify-center space-x-2">
                         <X className="w-4 h-4" />
                         <span>Отменить игру</span>
                       </div>
@@ -866,7 +886,7 @@ export default function StudentGamePage() {
         )}
 
         {/* Game Content */}
-        {(game.status === 'active' || game.status === 'started') && isJoined && (
+        {game.status === 'active' && isJoined && (
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -880,19 +900,21 @@ export default function StudentGamePage() {
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            className="bg-white rounded-xl shadow-lg border border-red-200 p-8 text-center"
+            className="premium-card p-8 text-center border-rose-100"
           >
-            <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
-              <AlertTriangle className="w-8 h-8 text-red-600" />
+            <div className="w-20 h-20 bg-rose-50 rounded-[2rem] flex items-center justify-center mx-auto mb-6">
+              <AlertTriangle className="w-10 h-10 text-rose-500" />
             </div>
-            <h2 className="text-2xl font-bold text-gray-900 mb-4">Игра отменена</h2>
-            <p className="text-gray-600 mb-6">Создатель игры отменил её</p>
-            <button
+            <h2 className="text-2xl font-black text-slate-800 tracking-tight mb-2">Игра отменена</h2>
+            <p className="text-slate-500 text-sm font-bold mb-8">Создатель игры отменил её</p>
+            <motion.button
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
               onClick={() => navigate('/student-games')}
-              className="bg-indigo-600 text-white px-8 py-3 rounded-xl hover:bg-indigo-700 transition-colors font-medium"
+              className="px-8 py-4 rounded-2xl font-black uppercase text-[10px] tracking-widest bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-xl shadow-indigo-100 hover:shadow-2xl transition-all"
             >
               Вернуться к играм
-            </button>
+            </motion.button>
           </motion.div>
         )}
         {/* Game Finished */}
@@ -900,16 +922,19 @@ export default function StudentGamePage() {
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            className="bg-white rounded-xl shadow-lg border border-gray-100 p-8 text-center"
+            className="premium-card p-8 text-center"
           >
-            <h2 className="text-2xl font-bold text-gray-900 mb-4">Игра завершена!</h2>
-            <p className="text-gray-600 mb-6">Спасибо за участие в игре</p>
-            <button
+            <div className="w-20 h-20 bg-gradient-to-br from-indigo-50 to-purple-50 rounded-[2rem] flex items-center justify-center mx-auto mb-6 text-5xl">🏆</div>
+            <h2 className="text-2xl font-black text-slate-800 tracking-tight mb-2">Игра завершена!</h2>
+            <p className="text-slate-500 text-sm font-bold mb-8">Спасибо за участие в игре</p>
+            <motion.button
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
               onClick={() => navigate('/student-games')}
-              className="bg-indigo-600 text-white px-8 py-3 rounded-xl hover:bg-indigo-700 transition-colors font-medium"
+              className="px-8 py-4 rounded-2xl font-black uppercase text-[10px] tracking-widest bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-xl shadow-indigo-100 hover:shadow-2xl transition-all"
             >
               Вернуться к играм
-            </button>
+            </motion.button>
           </motion.div>
         )}
 

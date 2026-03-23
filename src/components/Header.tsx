@@ -42,8 +42,8 @@ export default function Header({ onShowAdminModal, onStudentLogin }: HeaderProps
       const now = Date.now();
       const diff = now - parseInt(savedTime, 10);
 
-      // 3 дня = 259200000 мс
-      if (diff > 259200000) {
+      // 365 дней = 31536000000 мс
+      if (diff > 31536000000) {
         localStorage.removeItem('studentId');
         localStorage.removeItem('createdAt');
         localStorage.removeItem('studentDashboardData');
@@ -99,29 +99,29 @@ export default function Header({ onShowAdminModal, onStudentLogin }: HeaderProps
   return (
     <>
       <LanguageSwitcher />
-      <header className="absolute top-0 left-0 right-0 z-40 p-4">
-        <div className="flex justify-end items-center space-x-3">
+      <header className="absolute top-0 left-0 right-0 z-40 p-2 sm:p-4 pointer-events-none">
+        <div className="flex justify-end items-center space-x-2 sm:space-x-3 pointer-events-auto mt-1 sm:mt-0">
           {!loading && savedStudent ? (
             /* Кнопка с именем студента при наличии сохраненной сессии */
             <motion.button
               whileHover={{ scale: 1.02, y: -1 }}
               whileTap={{ scale: 0.98 }}
               onClick={handleStudentClick}
-              className="flex items-center space-x-3 bg-white/95 backdrop-blur-md border border-green-200/50 hover:border-green-300/70 text-green-700 px-4 py-3 rounded-xl transition-all duration-300 shadow-lg hover:shadow-xl group"
+              className="flex items-center space-x-2 sm:space-x-3 bg-white/95 backdrop-blur-md border border-green-200/50 hover:border-green-300/70 text-green-700 px-3 py-2 sm:px-4 sm:py-3 rounded-xl transition-all duration-300 shadow-lg hover:shadow-xl group"
             >
               <StudentAvatar 
                 student={savedStudent.student} 
                 avatarUrl={profile?.avatar_url}
                 size="sm"
-                className="w-6 h-6"
+                className="w-5 h-5 sm:w-6 sm:h-6"
               />
-              <div className="text-left">
-                <div className="text-sm font-semibold">{getStudentShortName()}</div>
-                <div className="text-xs opacity-75">{savedStudent.className}</div>
+              <div className="text-left hidden xs:block">
+                <div className="text-[11px] sm:text-sm font-semibold leading-tight">{getStudentShortName()}</div>
+                <div className="text-[9px] sm:text-xs opacity-75">{savedStudent.className}</div>
               </div>
               <div className="flex items-center space-x-1">
-                <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-                <ChevronRight className="w-4 h-4 opacity-60 group-hover:opacity-100 transition-opacity" />
+                <div className="w-1.5 h-1.5 sm:w-2 sm:h-2 bg-green-500 rounded-full animate-pulse"></div>
+                <ChevronRight className="w-3 h-3 sm:w-4 sm:h-4 opacity-60 group-hover:opacity-100 transition-opacity hidden sm:block" />
               </div>
             </motion.button>
           ) : !loading ? (
@@ -131,11 +131,11 @@ export default function Header({ onShowAdminModal, onStudentLogin }: HeaderProps
                 whileHover={{ scale: 1.02, y: -1 }}
                 whileTap={{ scale: 0.98 }}
                 onClick={() => setShowKeyModal(true)}
-                className="flex items-center space-x-2 bg-white/90 backdrop-blur-md border border-indigo-200/50 hover:border-indigo-300/70 text-indigo-700 px-4 py-2 rounded-xl transition-all duration-300 shadow-lg hover:shadow-xl"
+                className="flex items-center space-x-1.5 sm:space-x-2 bg-white/90 backdrop-blur-md border border-indigo-200/50 hover:border-indigo-300/70 text-indigo-700 px-3 sm:px-4 py-2 sm:py-2.5 rounded-xl transition-all duration-300 shadow-lg hover:shadow-xl"
               >
-                <HelpCircle className="w-4 h-4" />
-                <span className="text-sm font-medium hidden sm:inline">{t('help.howToGetKey')}</span>
-                <span className="text-sm font-medium sm:hidden">{t('auth.enterKey')}?</span>
+                <HelpCircle className="w-4 h-4 sm:w-5 sm:h-5" />
+                <span className="text-xs sm:text-sm font-medium hidden sm:inline">{t('help.howToGetKey')}</span>
+                <span className="text-[11px] font-medium sm:hidden leading-none">{t('auth.enterKey')}?</span>
               </motion.button>
 
               {/* Кнопка авторизации */}
@@ -143,11 +143,11 @@ export default function Header({ onShowAdminModal, onStudentLogin }: HeaderProps
                 whileHover={{ scale: 1.02, y: -1 }}
                 whileTap={{ scale: 0.98 }}
                 onClick={onShowAdminModal}
-                className="flex items-center space-x-2 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white px-4 py-2 rounded-xl transition-all duration-300 shadow-lg hover:shadow-xl"
+                className="flex items-center space-x-1.5 sm:space-x-2 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white px-3 sm:px-4 py-2 sm:py-2.5 rounded-xl transition-all duration-300 shadow-lg hover:shadow-xl"
               >
-                <Shield className="w-4 h-4" />
-                <span className="text-sm font-medium hidden sm:inline">{t('admin.login')}</span>
-                <span className="text-sm font-medium sm:hidden">{t('auth.login')}</span>
+                <Shield className="w-4 h-4 sm:w-5 sm:h-5" />
+                <span className="text-xs sm:text-sm font-medium hidden sm:inline">{t('admin.login')}</span>
+                <span className="text-[11px] font-medium sm:hidden leading-none">{t('auth.login')}</span>
               </motion.button>
             </>
           ) : (
@@ -155,10 +155,10 @@ export default function Header({ onShowAdminModal, onStudentLogin }: HeaderProps
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
-              className="flex items-center space-x-2 bg-white/90 backdrop-blur-md border border-gray-200/50 px-4 py-3 rounded-xl shadow-lg"
+              className="flex items-center space-x-2 bg-white/90 backdrop-blur-md border border-gray-200/50 px-3 sm:px-4 py-2 sm:py-3 rounded-xl shadow-lg"
             >
-              <div className="w-4 h-4 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin"></div>
-              <span className="text-sm text-gray-600">Проверка сессии...</span>
+              <div className="w-3 h-3 sm:w-4 sm:h-4 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin"></div>
+              <span className="text-[10px] sm:text-sm text-gray-600 hidden xs:inline">Проверка...</span>
             </motion.div>
           )}
         </div>

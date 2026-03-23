@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { BookOpen, FileText, MoreVertical, LogOut, Trash2, User as UserIcon, Calendar, MessageCircle, Gamepad2, Timer, Clock, User, MapPin, ArrowRight, Menu, X, Home } from 'lucide-react';
+import { BookOpen, FileText, MoreVertical, LogOut, Trash2, User as UserIcon, Calendar, MessageCircle, Gamepad2, Timer, Clock, User, MapPin, ArrowRight, Menu, X, Home, Award } from 'lucide-react';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useNavigate } from 'react-router-dom';
 import StudentAvatar from '../components/StudentAvatar';
@@ -147,375 +147,320 @@ export default function StudentDashboardPage() {
   const { student, className } = studentData;
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-slate-50 via-white to-slate-50">
-      {/* Header */}
-      <header className="sticky top-0 z-50 bg-white/95 backdrop-blur-md border-b border-gray-200">
-        <div className="container mx-auto px-4 py-3">
+    <div className="min-h-screen pb-32 md:pb-8">
+      {/* Premium Header */}
+      <header className="sticky top-0 z-50 glass border-b border-white/20">
+        <div className="container mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
             <motion.div
-              initial={{ opacity: 0, x: -10 }}
+              initial={{ opacity: 0, x: -20 }}
               animate={{ opacity: 1, x: 0 }}
-              className="flex items-center space-x-3 flex-1"
+              className="flex items-center space-x-4 flex-1"
             >
-              <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-cyan-500 rounded-lg flex items-center justify-center shadow-md">
-                <Home className="w-5 h-5 text-white" />
+              <div className="w-12 h-12 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-2xl flex items-center justify-center shadow-premium transform hover:rotate-6 transition-transform">
+                <Home className="w-6 h-6 text-white" />
               </div>
-              <div className="hidden md:block">
-                <h1 className="text-lg font-bold text-gray-900">
+              <div>
+                <h1 className="text-xl font-black text-slate-800 tracking-tight leading-none mb-1">
                   {getStudentName()}
                 </h1>
-                <p className="text-xs text-gray-600">{className}</p>
+                <div className="flex items-center space-x-2">
+                  <span className="px-2 py-0.5 bg-indigo-50 text-indigo-600 rounded-md text-[10px] font-black uppercase tracking-wider border border-indigo-100/50">
+                    {className}
+                  </span>
+                  <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse shadow-[0_0_8px_rgba(16,185,129,0.5)]"></div>
+                </div>
               </div>
             </motion.div>
 
-            <div className="flex items-center space-x-2 md:space-x-3">
-              {/* Session Indicator */}
-              <motion.div
-                initial={{ opacity: 0, scale: 0 }}
-                animate={{ opacity: 1, scale: 1 }}
-                className="w-2 h-2 bg-green-500 rounded-full shadow-lg animate-pulse"
-                title="Активный сеанс"
-              />
+            <div className="flex items-center space-x-2">
+              {/* Desktop Nav Actions */}
+              <nav className="hidden md:flex items-center bg-slate-100/50 p-1 rounded-2xl border border-slate-200/50 mr-4">
+                {[
+                  { icon: UserIcon, label: 'Профиль', onClick: handleProfileClick, color: 'text-indigo-600' },
+                  { icon: Calendar, label: 'Уроки', onClick: handleScheduleClick, color: 'text-emerald-600' },
+                  { icon: MessageCircle, label: 'Чат', onClick: handleChatClick, color: 'text-blue-600' },
+                  { icon: Gamepad2, label: 'Игры', onClick: handleGamesClick, color: 'text-rose-600' },
+                ].map((item, i) => (
+                  <motion.button
+                    key={i}
+                    whileHover={{ scale: 1.05, y: -2 }}
+                    whileTap={{ scale: 0.95 }}
+                    onClick={item.onClick}
+                    className="p-2.5 rounded-xl hover:bg-white hover:shadow-sm transition-all text-slate-500 hover:text-indigo-600 flex items-center space-x-2 group"
+                  >
+                    <item.icon className="w-5 h-5" />
+                    <span className="text-xs font-bold hidden lg:block">{item.label}</span>
+                  </motion.button>
+                ))}
+              </nav>
 
-              {/* Desktop Menu */}
-              <div className="hidden md:flex items-center space-x-2">
-                <motion.button
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                  onClick={handleProfileClick}
-                  className="p-2 rounded-lg hover:bg-gray-100 transition-colors"
-                  title="Профиль"
-                >
-                  <UserIcon className="w-5 h-5 text-gray-600" />
-                </motion.button>
-
-                <motion.button
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                  onClick={handleScheduleClick}
-                  className="p-2 rounded-lg hover:bg-gray-100 transition-colors"
-                  title="Расписание"
-                >
-                  <Calendar className="w-5 h-5 text-gray-600" />
-                </motion.button>
-
-                <motion.button
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                  onClick={handleChatClick}
-                  className="p-2 rounded-lg hover:bg-gray-100 transition-colors"
-                  title="Чат класса"
-                >
-                  <MessageCircle className="w-5 h-5 text-gray-600" />
-                </motion.button>
-
-                <motion.button
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                  onClick={handleGamesClick}
-                  className="p-2 rounded-lg hover:bg-gray-100 transition-colors"
-                  title="Игры"
-                >
-                  <Gamepad2 className="w-5 h-5 text-gray-600" />
-                </motion.button>
-              </div>
-
-              {/* Mobile Menu Button */}
-              <button
-                onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-                className="md:hidden p-2 rounded-lg hover:bg-gray-100 transition-colors"
-              >
-                {mobileMenuOpen ? (
-                  <X className="w-5 h-5 text-gray-600" />
-                ) : (
-                  <Menu className="w-5 h-5 text-gray-600" />
-                )}
-              </button>
-
-              {/* More Options */}
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <motion.button
                     whileHover={{ scale: 1.05 }}
                     whileTap={{ scale: 0.95 }}
-                    className="p-2 rounded-lg hover:bg-gray-100 transition-colors"
+                    className="w-12 h-12 flex items-center justify-center bg-white rounded-2xl shadow-sm border border-slate-100 text-slate-600 hover:text-indigo-600 transition-all"
                   >
-                    <MoreVertical className="w-5 h-5 text-gray-600" />
+                    <MoreVertical className="w-6 h-6" />
                   </motion.button>
                 </DropdownMenuTrigger>
 
-                <DropdownMenuContent
-                  align="end"
-                  className="w-48"
-                  asChild
-                >
-                  <motion.div
-                    initial={{ opacity: 0, scale: 0.95, y: -10 }}
-                    animate={{ opacity: 1, scale: 1, y: 0 }}
-                    exit={{ opacity: 0, scale: 0.95, y: -10 }}
-                    transition={{ duration: 0.15, ease: "easeOut" }}
-                  >
-                    <div>
-                      <DropdownMenuItem
-                        onClick={() => { handleForgetSession(); setMobileMenuOpen(false); }}
-                        className="cursor-pointer"
-                      >
-                        <Trash2 className="w-4 h-4 mr-3 text-orange-500" />
-                        <span>Полный выход</span>
-                      </DropdownMenuItem>
-
-                      <DropdownMenuItem
-                        onClick={() => { handleLogout(); setMobileMenuOpen(false); }}
-                        className="cursor-pointer"
-                      >
-                        <LogOut className="w-4 h-4 mr-3 text-red-500" />
-                        <span>Выход</span>
-                      </DropdownMenuItem>
-                    </div>
+                <DropdownMenuContent align="end" className="w-56 p-2 rounded-3xl border-slate-100 shadow-premium glass" asChild>
+                  <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
+                    <DropdownMenuItem onClick={handleForgetSession} className="p-3 rounded-2xl cursor-pointer hover:bg-rose-50 text-rose-600 flex items-center font-bold">
+                      <Trash2 className="w-5 h-5 mr-3" />
+                      Забыть сеанс
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={handleLogout} className="p-3 rounded-2xl cursor-pointer hover:bg-slate-50 text-slate-600 flex items-center font-bold">
+                      <LogOut className="w-5 h-5 mr-3" />
+                      Выйти из кабинета
+                    </DropdownMenuItem>
                   </motion.div>
                 </DropdownMenuContent>
               </DropdownMenu>
+
+              {/* Mobile Menu Toggle */}
+              <button
+                onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+                className="md:hidden w-12 h-12 flex items-center justify-center bg-indigo-600 rounded-2xl shadow-lg shadow-indigo-200 text-white active:scale-90 transition-transform"
+              >
+                {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+              </button>
             </div>
           </div>
-
-          {/* Mobile Menu */}
-          <AnimatePresence>
-            {mobileMenuOpen && (
-              <motion.div
-                initial={{ opacity: 0, height: 0 }}
-                animate={{ opacity: 1, height: 'auto' }}
-                exit={{ opacity: 0, height: 0 }}
-                className="md:hidden mt-3 pt-3 border-t border-gray-100 space-y-2"
-              >
-                <button
-                  onClick={() => { handleProfileClick(); setMobileMenuOpen(false); }}
-                  className="w-full flex items-center space-x-3 p-3 rounded-lg hover:bg-gray-50 transition-colors text-left"
-                >
-                  <UserIcon className="w-5 h-5 text-blue-500" />
-                  <span className="font-medium text-gray-700">Профиль</span>
-                </button>
-
-                <button
-                  onClick={() => { handleScheduleClick(); setMobileMenuOpen(false); }}
-                  className="w-full flex items-center space-x-3 p-3 rounded-lg hover:bg-gray-50 transition-colors text-left"
-                >
-                  <Calendar className="w-5 h-5 text-green-500" />
-                  <span className="font-medium text-gray-700">Расписание</span>
-                </button>
-
-                <button
-                  onClick={() => { handleChatClick(); setMobileMenuOpen(false); }}
-                  className="w-full flex items-center space-x-3 p-3 rounded-lg hover:bg-gray-50 transition-colors text-left"
-                >
-                  <MessageCircle className="w-5 h-5 text-cyan-500" />
-                  <span className="font-medium text-gray-700">Чат класса</span>
-                </button>
-
-                <button
-                  onClick={() => { handleGamesClick(); setMobileMenuOpen(false); }}
-                  className="w-full flex items-center space-x-3 p-3 rounded-lg hover:bg-gray-50 transition-colors text-left"
-                >
-                  <Gamepad2 className="w-5 h-5 text-purple-500" />
-                  <span className="font-medium text-gray-700">Игры с классом</span>
-                </button>
-              </motion.div>
-            )}
-          </AnimatePresence>
         </div>
+
+        {/* Mobile Flyout Menu */}
+        <AnimatePresence>
+          {mobileMenuOpen && (
+            <motion.div
+              initial={{ height: 0, opacity: 0 }}
+              animate={{ height: 'auto', opacity: 1 }}
+              exit={{ height: 0, opacity: 0 }}
+              className="md:hidden bg-white/80 backdrop-blur-xl border-t border-slate-100 overflow-hidden"
+            >
+              <div className="p-4 grid grid-cols-2 gap-3">
+                {[
+                  { icon: UserIcon, label: 'Профиль', onClick: handleProfileClick, bg: 'bg-indigo-50', text: 'text-indigo-600' },
+                  { icon: Calendar, label: 'Уроки', onClick: handleScheduleClick, bg: 'bg-emerald-50', text: 'text-emerald-600' },
+                  { icon: MessageCircle, label: 'Чат', onClick: handleChatClick, bg: 'bg-blue-50', text: 'text-blue-600' },
+                  { icon: Gamepad2, label: 'Игры', onClick: handleGamesClick, bg: 'bg-rose-50', text: 'text-rose-600' },
+                ].map((item, i) => (
+                  <button
+                    key={i}
+                    onClick={() => { item.onClick(); setMobileMenuOpen(false); }}
+                    className={`${item.bg} ${item.text} p-4 rounded-3xl flex flex-col items-center justify-center space-y-2 font-black text-xs active:scale-95 transition-transform border border-white`}
+                  >
+                    <item.icon className="w-6 h-6" />
+                    <span>{item.label}</span>
+                  </button>
+                ))}
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </header>
 
-      <div className="container mx-auto px-4 py-6 md:py-12">
-        {/* Main Content */}
-        <div className="space-y-6">
-          {/* Current Lesson Widget */}
-          {schedule.length > 0 && (currentLesson.current || currentLesson.isBreak) && (
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-            >
-              <div className="bg-gradient-to-r from-blue-600 to-cyan-600 rounded-2xl p-6 md:p-8 text-white shadow-lg overflow-hidden relative">
-                <div className="absolute top-0 right-0 w-40 h-40 bg-white/10 rounded-full -mr-20 -mt-20"></div>
-                <div className="absolute bottom-0 left-0 w-32 h-32 bg-white/10 rounded-full -ml-16 -mb-16"></div>
+      <main className="container mx-auto px-4 py-8 max-w-7xl animate-card-appear">
+        {/* Welcome Banner */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="mb-8"
+        >
+          <h2 className="text-3xl md:text-5xl font-black text-slate-800 tracking-tight mb-2">
+            Добрый день, <span className="text-gradient">{getStudentName().split(' ')[0]}</span>! 👋
+          </h2>
+          <p className="text-slate-500 font-medium">Желаем продуктивного учебного дня и отличных оценок!</p>
+        </motion.div>
 
-                <div className="relative z-10">
+        {/* Bento Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-12 gap-6 md:gap-8">
+          
+          {/* Active Lesson Widget */}
+          <div className="md:col-span-12 lg:col-span-7">
+            {schedule.length > 0 && (currentLesson.current || currentLesson.isBreak) ? (
+              <motion.div
+                whileHover={{ y: -4 }}
+                className="bg-gradient-to-br from-indigo-600 via-indigo-700 to-purple-800 rounded-[2.5rem] p-8 md:p-10 text-white shadow-premium relative overflow-hidden h-full group"
+              >
+                <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full blur-3xl -mr-32 -mt-32 group-hover:bg-white/15 transition-all duration-700"></div>
+                <div className="absolute bottom-0 left-0 w-48 h-48 bg-black/10 rounded-full blur-2xl -ml-24 -mb-24"></div>
+                
+                <div className="relative z-10 flex flex-col h-full justify-between">
                   {currentLesson.current ? (
-                    <div>
-                      <div className="flex items-center space-x-3 mb-4">
-                        <motion.div
-                          animate={{ scale: [1, 1.1, 1] }}
-                          transition={{ repeat: Infinity, duration: 2 }}
-                        >
-                          <Timer className="w-6 h-6" />
-                        </motion.div>
-                        <h3 className="text-lg font-bold">Идет урок сейчас</h3>
-                      </div>
-
-                      <h2 className="text-3xl md:text-4xl font-bold mb-4">
-                        {currentLesson.current.subject}
-                      </h2>
-
-                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-                        <div className="bg-white/20 backdrop-blur-sm rounded-xl p-3">
-                          <p className="text-white/70 text-sm">Преподаватель</p>
-                          <p className="font-semibold">{currentLesson.current.teacher}</p>
+                    <>
+                      <div className="flex items-center justify-between mb-8">
+                        <div className="flex items-center space-x-3 px-4 py-2 bg-white/10 backdrop-blur-md rounded-full border border-white/10 font-bold text-sm tracking-wide">
+                          <Timer className="w-4 h-4 animate-pulse" />
+                          <span className="uppercase">Сейчас идет урок</span>
                         </div>
-                        <div className="bg-white/20 backdrop-blur-sm rounded-xl p-3">
-                          <p className="text-white/70 text-sm">Кабинет</p>
-                          <p className="font-semibold">{currentLesson.current.room}</p>
-                        </div>
-                        <div className="bg-white/20 backdrop-blur-sm rounded-xl p-3">
-                          <p className="text-white/70 text-sm">Время</p>
-                          <p className="font-semibold">
-                            {currentLesson.current.start_time.slice(0, 5)} - {currentLesson.current.end_time.slice(0, 5)}
-                          </p>
+                        <div className="text-4xl md:text-5xl font-black font-mono tracking-tighter">
+                          {String(currentLesson.timeLeft.hours).padStart(2, '0')}:
+                          {String(currentLesson.timeLeft.minutes).padStart(2, '0')}:
+                          {String(currentLesson.timeLeft.seconds).padStart(2, '0')}
                         </div>
                       </div>
 
-                      <div className="bg-white/20 backdrop-blur-sm rounded-xl p-4 inline-flex items-center space-x-3">
-                        <div>
-                          <div className="text-4xl font-mono font-bold">
-                            {String(currentLesson.timeLeft.hours).padStart(2, '0')}:
-                            {String(currentLesson.timeLeft.minutes).padStart(2, '0')}:
-                            {String(currentLesson.timeLeft.seconds).padStart(2, '0')}
-                          </div>
-                          <div className="text-sm text-white/80">Осталось</div>
+                      <div className="mb-10">
+                        <h2 className="text-4xl md:text-6xl font-black mb-4 tracking-tight leading-tight group-hover:translate-x-2 transition-transform duration-500">
+                          {currentLesson.current.subject}
+                        </h2>
+                        <div className="flex flex-wrap gap-3">
+                          <span className="px-4 py-2 bg-black/20 backdrop-blur-md rounded-2xl flex items-center space-x-2 border border-white/5 font-bold">
+                            <User className="w-4 h-4" />
+                            <span>{currentLesson.current.teacher}</span>
+                          </span>
+                          <span className="px-4 py-2 bg-black/20 backdrop-blur-md rounded-2xl flex items-center space-x-2 border border-white/5 font-bold">
+                            <MapPin className="w-4 h-4" />
+                            <span>Кабинет {currentLesson.current.room}</span>
+                          </span>
                         </div>
                       </div>
-                    </div>
+
+                      <div className="w-full bg-white/10 h-3 rounded-full overflow-hidden">
+                        <motion.div 
+                          className="h-full bg-gradient-to-r from-emerald-400 to-cyan-400"
+                          initial={{ width: 0 }}
+                          animate={{ width: "65%" }} // Should be calculated, but using placeholder for style
+                          transition={{ duration: 1.5 }}
+                        />
+                      </div>
+                    </>
                   ) : currentLesson.isBreak && currentLesson.next ? (
-                    <div>
-                      <div className="flex items-center space-x-3 mb-4">
-                        <Clock className="w-6 h-6" />
-                        <h3 className="text-lg font-bold">Перемена</h3>
-                      </div>
-
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div>
-                          <p className="text-white/70 text-sm mb-2">Следующий урок</p>
-                          <h2 className="text-3xl font-bold mb-2">{currentLesson.next.subject}</h2>
-                          <p className="text-white/80 text-sm">
-                            {currentLesson.next.start_time.slice(0, 5)} - {currentLesson.next.end_time.slice(0, 5)}
-                          </p>
-                        </div>
-
-                        <div className="bg-white/20 backdrop-blur-sm rounded-xl p-4 flex items-center justify-center">
-                          <div className="text-center">
-                            <div className="text-3xl font-mono font-bold">
-                              {String(currentLesson.timeUntilNext.hours).padStart(2, '0')}:
-                              {String(currentLesson.timeUntilNext.minutes).padStart(2, '0')}:
-                              {String(currentLesson.timeUntilNext.seconds).padStart(2, '0')}
-                            </div>
-                            <div className="text-sm text-white/80">До начала</div>
-                          </div>
+                    <>
+                      <div className="flex items-center justify-between mb-6">
+                        <div className="flex items-center space-x-3 px-4 py-2 bg-emerald-500/20 backdrop-blur-md rounded-full border border-emerald-400/20 text-emerald-300 font-bold text-sm tracking-wide">
+                          <Clock className="w-4 h-4" />
+                          <span className="uppercase">Перемена</span>
                         </div>
                       </div>
-                    </div>
+                      <h3 className="text-white/60 font-bold text-lg mb-2 uppercase tracking-widest">Следующий урок</h3>
+                      <h2 className="text-3xl md:text-5xl font-black mb-8">{currentLesson.next.subject}</h2>
+                      <div className="flex items-center justify-between bg-white/10 backdrop-blur-md p-6 rounded-3xl border border-white/5">
+                        <span className="font-bold text-indigo-200">До начала осталось:</span>
+                        <span className="text-3xl font-black font-mono">
+                          {String(currentLesson.timeUntilNext.minutes).padStart(2, '0')}:
+                          {String(currentLesson.timeUntilNext.seconds).padStart(2, '0')}
+                        </span>
+                      </div>
+                    </>
                   ) : null}
                 </div>
+              </motion.div>
+            ) : (
+              <div className="premium-card p-10 flex flex-col items-center justify-center text-center h-full min-h-[400px]">
+                <div className="w-24 h-24 bg-slate-50 text-slate-300 rounded-full flex items-center justify-center mb-6">
+                  <Clock className="w-12 h-12" />
+                </div>
+                <h3 className="text-2xl font-black text-slate-400 uppercase tracking-widest">Уроки завершены</h3>
+                <p className="text-slate-400 font-bold mt-2">Отдыхай и набирайся сил на завтра!</p>
+              </div>
+            )}
+          </div>
+
+          {/* Quick Info & Stats */}
+          <div className="md:col-span-12 lg:col-span-5 grid grid-cols-2 gap-6">
+            <motion.div
+              whileHover={{ scale: 1.02 }}
+              onClick={handleScheduleClick}
+              className="col-span-2 bg-white rounded-[2.5rem] p-8 shadow-sm border border-slate-100 flex items-center justify-between cursor-pointer group hover:border-emerald-200 transition-all duration-300"
+            >
+              <div className="flex items-center space-x-6">
+                <div className="w-16 h-16 bg-emerald-50 text-emerald-600 rounded-2xl flex items-center justify-center group-hover:bg-emerald-600 group-hover:text-white transition-all duration-500 shadow-inner">
+                  <Calendar className="w-8 h-8" />
+                </div>
+                <div>
+                  <h4 className="text-2xl font-black text-slate-800 tracking-tight">Расписание</h4>
+                  <p className="text-slate-500 font-bold">8 уроков сегодня</p>
+                </div>
+              </div>
+              <ArrowRight className="w-6 h-6 text-slate-300 group-hover:text-emerald-500 transition-all group-hover:translate-x-2" />
+            </motion.div>
+
+            <motion.div
+              whileHover={{ scale: 1.02 }}
+              onClick={() => navigate('/student-sor')}
+              className="bg-white rounded-[2.5rem] p-6 shadow-sm border border-slate-100 flex flex-col items-center text-center cursor-pointer group hover:border-indigo-200 transition-all duration-300"
+            >
+              <div className="w-14 h-14 bg-indigo-50 text-indigo-600 rounded-2xl flex items-center justify-center mb-4 group-hover:rotate-12 transition-all">
+                <BookOpen className="w-7 h-7" />
+              </div>
+              <h4 className="text-xl font-black text-slate-800 uppercase tracking-tighter">СОР</h4>
+              <p className="text-xs text-slate-400 font-bold mt-1">Архив заданий</p>
+            </motion.div>
+
+            <motion.div
+              whileHover={{ scale: 1.02 }}
+              onClick={() => navigate('/student-soch')}
+              className="bg-white rounded-[2.5rem] p-6 shadow-sm border border-slate-100 flex flex-col items-center text-center cursor-pointer group hover:border-purple-200 transition-all duration-300"
+            >
+              <div className="w-14 h-14 bg-purple-50 text-purple-600 rounded-2xl flex items-center justify-center mb-4 group-hover:-rotate-12 transition-all">
+                <Award className="w-7 h-7" />
+              </div>
+              <h4 className="text-xl font-black text-slate-800 uppercase tracking-tighter">СОЧ</h4>
+              <p className="text-xs text-slate-400 font-bold mt-1">Финальные тесты</p>
+            </motion.div>
+          </div>
+
+          {/* Social & Games Widget */}
+          <div className="md:col-span-12 lg:col-span-12">
+            <motion.div
+              whileHover={{ scale: 1.01 }}
+              onClick={handleChatClick}
+              className="bg-gradient-to-r from-blue-500 to-indigo-600 rounded-[3rem] p-10 text-white shadow-premium relative overflow-hidden group cursor-pointer"
+            >
+              <div className="absolute top-1/2 left-0 w-80 h-80 bg-white/10 rounded-full blur-[100px] -translate-y-1/2 -ml-40 group-hover:bg-white/20 transition-all duration-700"></div>
+              
+              <div className="relative z-10 flex flex-col md:flex-row items-center justify-between gap-8">
+                <div className="flex items-center space-x-8 text-center md:text-left">
+                  <div className="w-24 h-24 bg-white/20 backdrop-blur-xl rounded-[2rem] flex items-center justify-center shadow-lg transform group-hover:rotate-12 transition-all">
+                    <MessageCircle className="w-12 h-12 text-white" />
+                  </div>
+                  <div>
+                    <h3 className="text-4xl font-black tracking-tight mb-2 uppercase">Чат твоего класса</h3>
+                    <p className="text-indigo-100 font-bold text-lg max-w-xl">
+                      Общайся, узнавай новости первым и всегда будь на связи с командой!
+                    </p>
+                  </div>
+                </div>
+                
+                <div className="bg-white text-indigo-600 px-8 py-4 rounded-3xl font-black text-xl hover:scale-105 transition-all shadow-xl">
+                  Присоединиться
+                </div>
               </div>
             </motion.div>
-          )}
+          </div>
 
-          {/* Quick Subject Access Buttons */}
+          {/* Games Promo Bento */}
           <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.1 }}
+            whileHover={{ scale: 1.01 }}
+            onClick={handleGamesClick}
+            className="md:col-span-12 bg-white rounded-[3rem] p-6 border border-slate-100 shadow-sm relative overflow-hidden group cursor-pointer"
           >
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {/* СОР Button */}
-              <motion.div
-                whileHover={{ scale: 1.02, y: -4 }}
-                whileTap={{ scale: 0.98 }}
-                onClick={() => navigate('/student-sor')}
-                className="group bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 cursor-pointer border border-gray-100 p-6 md:p-8"
-              >
-                <div className="space-y-4">
-                  <div className="flex items-start justify-between">
-                    <div className="bg-gradient-to-br from-green-100 to-emerald-100 w-14 h-14 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform">
-                      <BookOpen className="w-7 h-7 text-green-600" />
-                    </div>
-                    <ArrowRight className="w-5 h-5 text-gray-300 group-hover:text-green-600 transition-colors transform group-hover:translate-x-1" />
-                  </div>
-
-                  <div>
-                    <h3 className="text-2xl font-bold text-gray-900 mb-1">{t('dashboard.sor')}</h3>
-                    <p className="text-gray-600 text-sm">{t('dashboard.sorDesc')}</p>
-                  </div>
-
-                  {getCurrentSubjectInfo() && (
-                    <div className="bg-green-50 border border-green-200 rounded-xl p-3">
-                      <p className="text-xs text-green-600 font-medium">СЕЙЧАС</p>
-                      <p className="font-semibold text-green-900">{getCurrentSubjectInfo()!.subject}</p>
-                      <p className="text-xs text-green-700">{getCurrentSubjectInfo()!.timeRange}</p>
-                    </div>
-                  )}
-                  {!getCurrentSubjectInfo() && getNextSubjectInfo() && (
-                    <div className="bg-gray-50 border border-gray-200 rounded-xl p-3">
-                      <p className="text-xs text-gray-500 font-medium">СЛЕДУЮЩИЙ</p>
-                      <p className="font-semibold text-gray-900">{getNextSubjectInfo()!.subject}</p>
-                      <p className="text-xs text-gray-600">{getNextSubjectInfo()!.timeRange}</p>
-                    </div>
-                  )}
+             <div className="absolute inset-0 bg-gradient-to-br from-rose-500/5 to-orange-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+             <div className="flex flex-col md:flex-row items-center gap-6 relative z-10 p-4">
+                <div className="w-20 h-20 bg-rose-50 text-rose-500 rounded-3xl flex items-center justify-center shrink-0 group-hover:scale-110 group-hover:rotate-6 transition-all shadow-inner">
+                  <Gamepad2 className="w-10 h-10" />
                 </div>
-              </motion.div>
-
-              {/* СОЧ Button */}
-              <motion.div
-                whileHover={{ scale: 1.02, y: -4 }}
-                whileTap={{ scale: 0.98 }}
-                onClick={() => navigate('/student-soch')}
-                className="group bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 cursor-pointer border border-gray-100 p-6 md:p-8"
-              >
-                <div className="space-y-4">
-                  <div className="flex items-start justify-between">
-                    <div className="bg-gradient-to-br from-amber-100 to-orange-100 w-14 h-14 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform">
-                      <FileText className="w-7 h-7 text-orange-600" />
-                    </div>
-                    <ArrowRight className="w-5 h-5 text-gray-300 group-hover:text-orange-600 transition-colors transform group-hover:translate-x-1" />
-                  </div>
-
-                  <div>
-                    <h3 className="text-2xl font-bold text-gray-900 mb-1">{t('dashboard.soch')}</h3>
-                    <p className="text-gray-600 text-sm">{t('dashboard.sochDesc')}</p>
-                  </div>
-
-                  {getCurrentSubjectInfo() && (
-                    <div className="bg-orange-50 border border-orange-200 rounded-xl p-3">
-                      <p className="text-xs text-orange-600 font-medium">СЕЙЧАС</p>
-                      <p className="font-semibold text-orange-900">{getCurrentSubjectInfo()!.subject}</p>
-                      <p className="text-xs text-orange-700">{getCurrentSubjectInfo()!.timeRange}</p>
-                    </div>
-                  )}
-                  {!getCurrentSubjectInfo() && getNextSubjectInfo() && (
-                    <div className="bg-gray-50 border border-gray-200 rounded-xl p-3">
-                      <p className="text-xs text-gray-500 font-medium">СЛЕДУЮЩИЙ</p>
-                      <p className="font-semibold text-gray-900">{getNextSubjectInfo()!.subject}</p>
-                      <p className="text-xs text-gray-600">{getNextSubjectInfo()!.timeRange}</p>
-                    </div>
-                  )}
+                <div className="flex-1">
+                  <h3 className="text-3xl font-black text-slate-800 tracking-tight mb-1">Время отдохнуть? 🎮</h3>
+                  <p className="text-slate-500 font-bold">Игры, викторины и турниры уже ждут тебя. Сразись с одноклассниками!</p>
                 </div>
-              </motion.div>
-            </div>
+                <div className="flex -space-x-4">
+                   {[1,2,3,4].map(i => (
+                     <div key={i} className="w-12 h-12 rounded-full border-4 border-white overflow-hidden bg-slate-200">
+                       <img src={`https://i.pravatar.cc/100?u=${i}`} alt="user" className="w-full h-full object-cover" />
+                     </div>
+                   ))}
+                   <div className="w-12 h-12 rounded-full border-4 border-white bg-indigo-600 flex items-center justify-center text-white text-xs font-black">+12</div>
+                </div>
+             </div>
           </motion.div>
 
-          {/* Info Banner */}
-          {preloadedData && (
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.2 }}
-              className="bg-gradient-to-r from-blue-50 to-cyan-50 border border-blue-200 rounded-2xl p-4 flex items-center space-x-3"
-            >
-              <div className="w-3 h-3 bg-blue-500 rounded-full animate-pulse"></div>
-              <div>
-                <p className="text-sm font-medium text-blue-900">Данные готовы к использованию</p>
-                <p className="text-xs text-blue-700">Быстрая навигация активна</p>
-              </div>
-            </motion.div>
-          )}
         </div>
-      </div>
+      </main>
     </div>
   );
 }

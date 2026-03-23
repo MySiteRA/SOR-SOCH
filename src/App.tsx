@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { BrowserRouter, HashRouter, Routes, Route, Navigate, useNavigate } from 'react-router-dom';
+import { BrowserRouter, HashRouter, Routes, Route, Navigate, useNavigate, useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { LanguageProvider } from './contexts/LanguageContext';
 import { dataPreloader } from './services/preloader';
@@ -28,6 +28,7 @@ import { Lock } from 'lucide-react';
 import { useLanguage } from './contexts/LanguageContext';
 import { useNavigationGuard } from './hooks/useNavigationGuard';
 import LoadingSpinner from './components/LoadingSpinner';
+import BottomNav from './components/BottomNav';
 
 function RouterSelector({ children }: { children: React.ReactNode }) {
   // Если приложение открыто внутри WebView (например, Android)
@@ -42,6 +43,7 @@ function RouterSelector({ children }: { children: React.ReactNode }) {
 function AppContent() {
   const { t } = useLanguage();
   const navigate = useNavigate();
+  const location = useLocation();
   useNavigationGuard();
   
   const [isAdminLoggedIn, setIsAdminLoggedIn] = useState(() => {
@@ -369,6 +371,11 @@ function AppContent() {
           </form>
         </div>
       </Modal>
+
+      {/* Render BottomNav only on student pages, except auth/selection which don't have the full bottom bar layout */}
+      {location.pathname.startsWith('/student') && (
+        <BottomNav />
+      )}
     </>
   );
 }

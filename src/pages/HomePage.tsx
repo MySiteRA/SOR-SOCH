@@ -90,8 +90,8 @@ export default function HomePage({ onShowAdminModal, onStudentLogin }: HomePageP
       const now = Date.now();
       const diff = now - parseInt(savedTime, 10);
 
-      // 3 дня = 259200000 мс
-      if (diff > 259200000) {
+      // 365 дней = 31536000000 мс
+      if (diff > 31536000000) {
         localStorage.removeItem('studentId');
         localStorage.removeItem('createdAt');
         localStorage.removeItem('studentDashboardData');
@@ -123,7 +123,7 @@ export default function HomePage({ onShowAdminModal, onStudentLogin }: HomePageP
         const classData = allClasses.find(c => c.id === student.class_id);
         
         if (classData) {
-          setSavedLogin({ studentId: savedId, expiresAt: parseInt(savedTime, 10) + 259200000 });
+          setSavedLogin({ studentId: savedId, expiresAt: parseInt(savedTime, 10) + 31536000000 });
           // Перенаправляем в дашборд с задержкой
           setTimeout(() => {
             onStudentLogin(student, classData.name);
@@ -291,7 +291,7 @@ export default function HomePage({ onShowAdminModal, onStudentLogin }: HomePageP
       // Сохраняем данные входа на 3 дня
       localStorage.setItem('studentId', student.id);
       localStorage.setItem('createdAt', Date.now().toString());
-      setSavedLogin({ studentId: student.id, expiresAt: Date.now() + 259200000 });
+      setSavedLogin({ studentId: student.id, expiresAt: Date.now() + 31536000000 });
     }
     
     // Получаем название класса
@@ -395,125 +395,130 @@ export default function HomePage({ onShowAdminModal, onStudentLogin }: HomePageP
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-100">
+    <div className="min-h-screen pb-safe">
       <Header 
         onShowAdminModal={onShowAdminModal} 
         showBackButton={false}
         onStudentLogin={onStudentLogin}
       />
       
-      <div className="container mx-auto px-4 py-12">
-        {/* Session Indicator */}
-        {savedLogin && (
-          <motion.div
-            initial={{ opacity: 0, scale: 0 }}
-            animate={{ opacity: 1, scale: 1 }}
-            className="fixed top-4 right-20 z-40"
-          >
-            <div className="w-4 h-4 bg-green-500 rounded-full shadow-lg border-2 border-white animate-pulse"></div>
-          </motion.div>
-        )}
-
-        {/* Logout Button */}
-        {savedLogin && (
-          <motion.button
-            initial={{ opacity: 0, y: -20 }}
-            animate={{ opacity: 1, y: 0 }}
-            onClick={handleForgetSession}
-            className="fixed top-4 right-4 z-50 flex items-center space-x-2 bg-orange-600 text-white px-4 py-2 rounded-xl hover:bg-orange-700 transition-colors shadow-lg"
-          >
-            <Trash2 className="w-4 h-4" />
-            <span>Забыть сеанс</span>
-          </motion.button>
-        )}
-
-        {/* Messages */}
+      <main className="container mx-auto px-4 py-16 md:py-24 max-w-7xl animate-card-appear">
+        {/* Session Info Bar */}
         <AnimatePresence>
-          {successMessage && (
+          {savedLogin && (
             <motion.div
-              initial={{ opacity: 0, y: -10 }}
+              initial={{ opacity: 0, y: -20 }}
               animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -10 }}
-              className="bg-green-100 border border-green-200 text-green-700 px-4 py-3 rounded-xl mb-6 max-w-2xl mx-auto text-center"
+              className="mb-12 flex flex-wrap items-center justify-between gap-4 p-6 glass border-emerald-100 rounded-[2.5rem] shadow-premium"
             >
-              {successMessage}
-            </motion.div>
-          )}
-          
-          {error && (
-            <motion.div
-              initial={{ opacity: 0, y: -10 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -10 }}
-              className="bg-red-100 border border-red-200 text-red-700 px-4 py-3 rounded-xl mb-6 max-w-2xl mx-auto text-center"
-            >
-              {error}
-              <button
-                onClick={() => setError(null)}
-                className="ml-2 text-red-500 hover:text-red-700"
+              <div className="flex items-center space-x-4">
+                <div className="w-12 h-12 bg-emerald-100 rounded-2xl flex items-center justify-center text-emerald-600 shadow-inner">
+                  <User className="w-6 h-6 animate-pulse" />
+                </div>
+                <div>
+                   <h4 className="text-sm font-black text-slate-800 tracking-tight leading-none mb-1 uppercase">Активная сессия</h4>
+                   <p className="text-[10px] font-bold text-emerald-600 uppercase tracking-widest">Автоматический вход включен</p>
+                </div>
+              </div>
+              <motion.button
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                onClick={handleForgetSession}
+                className="px-6 py-3 bg-rose-50 text-rose-600 rounded-2xl font-black uppercase text-[10px] tracking-widest hover:bg-rose-500 hover:text-white transition-all shadow-sm flex items-center gap-2"
               >
-                ✕
-              </button>
+                <Trash2 className="w-4 h-4" />
+                Забыть сеанс
+              </motion.button>
             </motion.div>
           )}
         </AnimatePresence>
 
-        {/* Main Page Content */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="max-w-6xl mx-auto"
-        >
-          <div className="text-center mb-12">
-            <div className="flex items-center justify-center mb-6">
-              <GraduationCap className="w-16 h-16 text-indigo-600 mr-4" />
-              <h1 className="text-5xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">
-                {t('home.title')}
-              </h1>
-            </div>
-            <p className="text-xl text-gray-600">{t('home.selectClass')}</p>
-          </div>
+        {/* Hero Section */}
+        <div className="text-center mb-20 relative px-4">
+           <div className="absolute top-0 left-1/2 -translate-x-1/2 w-64 h-64 bg-indigo-500/10 blur-[100px] -z-10 animate-float"></div>
+           
+           <motion.div
+             initial={{ scale: 0.8, opacity: 0 }}
+             animate={{ scale: 1, opacity: 1 }}
+             transition={{ duration: 1, ease: "backOut" }}
+             className="inline-flex p-6 bg-white rounded-[3rem] shadow-premium border border-slate-50 mb-10 transform hover:rotate-6 transition-transform cursor-pointer"
+           >
+              <div className="w-20 h-20 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-[2rem] flex items-center justify-center shadow-xl">
+                 <GraduationCap className="w-10 h-10 text-white" />
+              </div>
+           </motion.div>
 
-          {error ? (
-            <div className="text-center py-12">
-              <p className="text-red-600 mb-4">{error}</p>
-              <button
-                onClick={loadClasses}
-                className="px-6 py-3 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 transition-colors"
-              >
-                {t('common.tryAgain')}
-              </button>
+           <h1 className="text-4xl md:text-8xl font-black text-slate-900 tracking-tight leading-[0.9] mb-6">
+              УЧИСЬ <span className="text-gradient">КРАСИВО</span>
+           </h1>
+           <p className="text-slate-500 font-bold text-lg md:text-xl max-w-2xl mx-auto uppercase tracking-widest leading-relaxed">
+              Платформа для развития, <br />
+              достижения целей и побед.
+           </p>
+        </div>
+
+        {/* Class Selection Bento */}
+        <div className="grid grid-cols-1 md:grid-cols-12 gap-8 px-2 pb-20">
+           <div className="md:col-span-12 flex items-center justify-between mb-2">
+              <h2 className="text-2xl font-black text-slate-800 tracking-tight flex items-center gap-4">
+                 <div className="w-2 h-10 bg-indigo-600 rounded-full"></div>
+                 Выбери свой класс
+              </h2>
+           </div>
+
+           {classes.map((classItem, index) => (
+             <motion.div
+               key={classItem.id}
+               initial={{ opacity: 0, scale: 0.9, y: 20 }}
+               animate={{ opacity: 1, scale: 1, y: 0 }}
+               transition={{ delay: index * 0.05 }}
+               whileHover={{ y: -8, scale: 1.02 }}
+               whileTap={{ scale: 0.98 }}
+               onClick={() => navigate(`/class/${classItem.id}`, { 
+                 state: { 
+                   classId: classItem.id, 
+                   className: classItem.name 
+                 } 
+               })}
+               className="md:col-span-4 lg:col-span-3 premium-card p-10 flex flex-col items-center justify-center cursor-pointer group hover:border-indigo-100 transition-all duration-300 min-h-[260px] relative overflow-hidden text-center"
+             >
+                <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-500/5 blur-3xl group-hover:bg-indigo-500/10 transition-all rounded-full -mr-16 -mt-16"></div>
+                
+                <div className="w-20 h-20 bg-slate-50 rounded-[2rem] flex items-center justify-center mb-6 shadow-inner group-hover:bg-indigo-600 group-hover:text-white group-hover:rotate-12 transition-all duration-500 text-indigo-600">
+                   <div className="font-black text-3xl">{classItem.name.split(' ')[0]}</div>
+                </div>
+                
+                <h3 className="text-2xl font-black text-slate-800 tracking-tighter mb-2">{classItem.name}</h3>
+                <div className="flex items-center text-[10px] font-black uppercase tracking-widest text-slate-300 group-hover:text-indigo-500 transition-colors">
+                   Войти в класс <ArrowLeft className="w-3 h-3 ml-2 rotate-180" />
+                </div>
+             </motion.div>
+           ))}
+
+           {classes.length === 0 && !loading && (
+              <div className="md:col-span-12 py-20 premium-card text-center flex flex-col items-center">
+                 <div className="w-20 h-20 bg-slate-50 text-slate-200 rounded-[2rem] flex items-center justify-center mb-6">
+                    <GraduationCap className="w-10 h-10" />
+                 </div>
+                 <h3 className="text-xl font-black text-slate-400">Классы пока не созданы</h3>
+              </div>
+           )}
+        </div>
+      </main>
+
+      {/* Modern Footer */}
+      <footer className="py-20 border-t border-slate-100/50 bg-slate-50/30 backdrop-blur-sm">
+         <div className="container mx-auto px-4 text-center">
+            <h2 className="text-2xl font-black text-slate-800 tracking-tighter mb-4 opacity-30">SOR-SOCH PORTAL &copy; 2026</h2>
+            <div className="flex flex-wrap justify-center gap-8 mt-10">
+               {['Помощь', 'Правила', 'О проекте'].map(link => (
+                 <button key={link} className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-400 hover:text-indigo-600 transition-colors">
+                    {link}
+                 </button>
+               ))}
             </div>
-          ) : (
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-4">
-              {classes.map((classItem, index) => (
-                <motion.div
-                  key={classItem.id}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: index * 0.05 }}
-                  whileHover={{ scale: 1.02, y: -4 }}
-                  whileTap={{ scale: 0.98 }}
-                  onClick={() => navigate(`/class/${classItem.id}`, { 
-                    state: { 
-                      classId: classItem.id, 
-                      className: classItem.name 
-                    } 
-                  })}
-                  className="bg-white rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 cursor-pointer border border-gray-100 hover:border-indigo-300 p-6"
-                >
-                  <div className="text-center">
-                    <div className="w-16 h-16 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-xl flex items-center justify-center mx-auto mb-4">
-                      <GraduationCap className="w-8 h-8 text-white" />
-                    </div>
-                    <h3 className="text-2xl font-bold text-gray-800">{classItem.name}</h3>
-                  </div>
-                </motion.div>
-              ))}
-            </div>
-          )}
-        </motion.div>
-      </div>
+         </div>
+      </footer>
     </div>
   );
 }

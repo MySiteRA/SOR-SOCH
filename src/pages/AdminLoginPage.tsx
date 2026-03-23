@@ -23,64 +23,80 @@ export default function AdminLoginPage({ onLogin }: AdminLoginPageProps) {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-gray-100 flex items-center justify-center">
+    <div className="min-h-screen pb-safe flex items-center justify-center p-4 relative overflow-hidden">
+      {/* Decorative Background */}
+      <div className="absolute top-0 left-0 w-full h-full -z-10 bg-slate-50/50">
+         <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-indigo-500/10 rounded-full blur-[120px] animate-float"></div>
+         <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-purple-500/10 rounded-full blur-[120px] animate-float" style={{ animationDelay: '2s' }}></div>
+      </div>
+
       <motion.div
-        initial={{ opacity: 0, y: 20 }}
+        initial={{ opacity: 0, y: 30 }}
         animate={{ opacity: 1, y: 0 }}
-        className="bg-white rounded-xl shadow-xl p-8 w-full max-w-md"
+        className="premium-card p-10 w-full max-w-md relative overflow-hidden border-indigo-100"
       >
-        <div className="text-center mb-8">
-          <div className="bg-blue-100 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
-            <Lock className="w-8 h-8 text-blue-600" />
+        <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-500/5 blur-3xl -mr-16 -mt-16"></div>
+        
+        <div className="text-center mb-10 relative z-10">
+          <div className="w-20 h-20 bg-indigo-600 rounded-[2rem] flex items-center justify-center mx-auto mb-6 shadow-xl shadow-indigo-100 transform rotate-12">
+            <Lock className="w-10 h-10 text-white" />
           </div>
-          <h1 className="text-2xl font-bold text-gray-900 mb-2">Вход в админ-панель</h1>
-          <p className="text-gray-600">Введите учетные данные администратора</p>
+          <h1 className="text-3xl font-black text-slate-800 tracking-tight mb-2">Админ-панель</h1>
+          <p className="text-[10px] font-black uppercase tracking-[0.2em] text-indigo-500/60">Требуется авторизация</p>
         </div>
 
         {error && (
           <motion.div
-            initial={{ opacity: 0, y: -10 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="bg-red-100 border border-red-200 text-red-700 px-4 py-3 rounded-lg mb-6"
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="mb-8 p-4 bg-rose-500 text-white rounded-2xl shadow-lg shadow-rose-100 flex items-center justify-center font-bold text-center"
           >
             {error}
           </motion.div>
         )}
 
-        <form onSubmit={handleSubmit} className="space-y-6">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+        <form onSubmit={handleSubmit} className="space-y-6 relative z-10">
+          <div className="space-y-2">
+            <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-4">
               Логин
             </label>
             <input
               type="text"
               value={username}
               onChange={(e) => setUsername(e.target.value)}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              placeholder="Введите логин"
+              className="w-full px-8 py-5 bg-slate-50 border-none rounded-3xl focus:ring-4 focus:ring-indigo-100 outline-none font-bold text-slate-700 transition-all placeholder:text-slate-300 shadow-inner"
               required
             />
           </div>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+          <div className="space-y-2">
+            <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-4">
               Пароль
             </label>
             <input
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              placeholder="••••••••"
+              className="w-full px-8 py-5 bg-slate-50 border-none rounded-3xl focus:ring-4 focus:ring-indigo-100 outline-none font-bold text-slate-700 transition-all placeholder:text-slate-300 shadow-inner"
               required
             />
           </div>
 
-          <button
+          <motion.button
             type="submit"
-            className="w-full bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 transition-colors font-medium"
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
+            className="w-full bg-indigo-600 text-white py-5 rounded-3xl font-black uppercase text-xs tracking-widest shadow-xl shadow-indigo-100 hover:shadow-2xl transition-all flex items-center justify-center gap-3"
           >
-            Войти
-          </button>
+            Войти в систему
+          </motion.button>
         </form>
+        
+        <div className="mt-10 text-center opacity-30 text-[8px] font-black uppercase tracking-[0.4em] text-slate-400">
+           Protected Access System v5.0
+        </div>
       </motion.div>
     </div>
   );

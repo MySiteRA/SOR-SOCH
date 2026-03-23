@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ArrowLeft, BookOpen, MoreVertical, LogOut, Trash2, User as UserIcon, Calendar, MessageCircle, Gamepad2 } from 'lucide-react';
 import { useLanguage } from '../contexts/LanguageContext';
@@ -20,20 +20,7 @@ import {
   DropdownMenuTrigger,
 } from '../components/ui/dropdown-menu';
 import { extractGradeFromClassName } from '../lib/api';
-import type { Student, Subject } from '../lib/supabase';
-
-// Интерфейс для метаданных материала
-interface MaterialMetadata {
-  id: string;
-  subject_id: string;
-  title: string;
-  type: 'SOR' | 'SOCH';
-  created_at: string;
-  grade: number;
-  language: string;
-  quarter: number;
-  subject?: Subject;
-}
+import type { Student, Subject, Material } from '../lib/supabase';
 
 interface ScheduleItem {
   id: string;
@@ -52,7 +39,7 @@ export default function StudentSorPage() {
   const { t } = useLanguage();
   const navigate = useNavigate();
   const [studentData, setStudentData] = useState<{student: Student, className: string} | null>(null);
-  const [selectedMaterial, setSelectedMaterial] = useState<MaterialMetadata | null>(null);
+  const [selectedMaterial, setSelectedMaterial] = useState<Material | null>(null);
   const [showMaterialModal, setShowMaterialModal] = useState(false);
   const [selectedSubject, setSelectedSubject] = useState<Subject | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -177,109 +164,65 @@ export default function StudentSorPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-slate-100">
-      {/* Header */}
-      <header className="sticky top-0 z-40 backdrop-blur-xl bg-white/70 border-b border-gray-200/50 shadow-sm">
+    <div className="min-h-screen pb-24 md:pb-8">
+      {/* Premium Header */}
+      <header className="sticky top-0 z-50 glass border-b border-white/20">
         <div className="container mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-4">
               <motion.button
                 onClick={() => navigate('/student-dashboard')}
-                whileHover={{ x: -4 }}
-                whileTap={{ scale: 0.95 }}
-                className="flex items-center space-x-2 text-gray-700 hover:text-blue-600 font-medium transition-colors"
+                whileHover={{ scale: 1.1, x: -5 }}
+                whileTap={{ scale: 0.9 }}
+                className="w-10 h-10 flex items-center justify-center bg-white rounded-xl shadow-sm border border-slate-100 text-slate-600 hover:text-indigo-600 transition-all"
               >
-                <ArrowLeft className="w-5 h-5" />
-                <span>{t('common.back')}</span>
+                <ArrowLeft className="w-6 h-6" />
               </motion.button>
-              <div className="hidden sm:block">
-                <h1 className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-teal-600 bg-clip-text text-transparent">
-                  {t('dashboard.sor')}
-                </h1>
-                <p className="text-sm text-gray-600">
-                  {t('dashboard.sorDesc')}
-                </p>
+              <div>
+                 <h1 className="text-xl font-black text-slate-800 tracking-tight leading-none mb-1">
+                   {t('dashboard.sor')}
+                 </h1>
+                 <p className="text-[10px] font-black uppercase tracking-widest text-indigo-500">
+                    Суммативное оценивание
+                 </p>
               </div>
             </div>
 
             <div className="flex items-center space-x-3">
-              <motion.div
-                initial={{ opacity: 0, scale: 0 }}
-                animate={{ opacity: 1, scale: 1 }}
-                className="hidden sm:block w-2.5 h-2.5 bg-emerald-500 rounded-full shadow-lg shadow-emerald-500/50 animate-pulse"
-              />
+               <div className="hidden sm:flex items-center space-x-2 px-3 py-1.5 bg-emerald-50 text-emerald-600 rounded-full border border-emerald-100 text-[10px] font-black uppercase">
+                  <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse mr-1"></div>
+                  Библиотека СОР
+               </div>
 
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <motion.button
-                    whileHover={{ scale: 1.08 }}
-                    whileTap={{ scale: 0.92 }}
-                    className="flex items-center justify-center w-10 h-10 bg-gradient-to-br from-gray-50 to-gray-100 border border-gray-200 rounded-xl hover:border-gray-300 transition-all duration-200 shadow-md hover:shadow-lg"
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                    className="w-10 h-10 flex items-center justify-center bg-white rounded-xl shadow-sm border border-slate-100 text-slate-600 hover:text-indigo-600 transition-all"
                   >
-                    <MoreVertical className="w-5 h-5 text-gray-700" />
+                    <MoreVertical className="w-5 h-5" />
                   </motion.button>
                 </DropdownMenuTrigger>
 
-                <DropdownMenuContent
-                  align="end"
-                  className="w-52 mt-2"
-                  asChild
-                >
-                  <motion.div
-                    initial={{ opacity: 0, scale: 0.95, y: -10 }}
-                    animate={{ opacity: 1, scale: 1, y: 0 }}
-                    exit={{ opacity: 0, scale: 0.95, y: -10 }}
-                    transition={{ duration: 0.15, ease: "easeOut" }}
-                  >
-                    <div>
-                      <DropdownMenuItem
-                        onClick={handleProfileClick}
-                        className="cursor-pointer"
-                      >
-                        <UserIcon className="w-4 h-4 mr-3 text-blue-500" />
-                        <span className="text-gray-700">Профиль</span>
-                      </DropdownMenuItem>
-
-                      <DropdownMenuItem
-                        onClick={handleScheduleClick}
-                        className="cursor-pointer"
-                      >
-                        <Calendar className="w-4 h-4 mr-3 text-amber-500" />
-                        <span className="text-gray-700">Расписание</span>
-                      </DropdownMenuItem>
-
-                      <DropdownMenuItem
-                        onClick={handleChatClick}
-                        className="cursor-pointer"
-                      >
-                        <MessageCircle className="w-4 h-4 mr-3 text-emerald-500" />
-                        <span className="text-gray-700">Чат класса</span>
-                      </DropdownMenuItem>
-
-                      <DropdownMenuItem
-                        onClick={handleGamesClick}
-                        className="cursor-pointer"
-                      >
-                        <Gamepad2 className="w-4 h-4 mr-3 text-rose-500" />
-                        <span className="text-gray-700">Игры с классом</span>
-                      </DropdownMenuItem>
-
-                      <DropdownMenuItem
-                        onClick={handleForgetSession}
-                        className="cursor-pointer"
-                      >
-                        <Trash2 className="w-4 h-4 mr-3 text-orange-500" />
-                        <span className="text-gray-700">Забыть сеанс</span>
-                      </DropdownMenuItem>
-
-                      <DropdownMenuItem
-                        onClick={handleLogout}
-                        className="cursor-pointer"
-                      >
-                        <LogOut className="w-4 h-4 mr-3 text-red-500" />
-                        <span className="text-gray-700">Выйти</span>
-                      </DropdownMenuItem>
-                    </div>
+                <DropdownMenuContent align="end" className="w-56 p-2 rounded-2xl border-slate-100 shadow-premium glass" asChild>
+                  <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
+                    <DropdownMenuItem onClick={handleProfileClick} className="p-3 rounded-xl cursor-pointer hover:bg-slate-50 text-slate-600 flex items-center font-bold">
+                      <UserIcon className="w-4 h-4 mr-3" />
+                      Профиль
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={handleScheduleClick} className="p-3 rounded-xl cursor-pointer hover:bg-slate-50 text-slate-600 flex items-center font-bold">
+                      <Calendar className="w-4 h-4 mr-3 text-amber-500" />
+                      Расписание
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={handleChatClick} className="p-3 rounded-xl cursor-pointer hover:bg-slate-50 text-slate-600 flex items-center font-bold">
+                      <MessageCircle className="w-4 h-4 mr-3 text-blue-500" />
+                      Чат
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={handleForgetSession} className="p-3 rounded-xl cursor-pointer hover:bg-rose-50 text-rose-600 flex items-center font-bold">
+                      <Trash2 className="w-4 h-4 mr-3" />
+                      Забыть сеанс
+                    </DropdownMenuItem>
                   </motion.div>
                 </DropdownMenuContent>
               </DropdownMenu>
@@ -288,7 +231,7 @@ export default function StudentSorPage() {
         </div>
       </header>
 
-      <div className="container mx-auto px-4 py-12">
+      <div className="container mx-auto px-4 py-8 max-w-7xl animate-card-appear">
         {/* Error Message */}
         {error && (
           <motion.div

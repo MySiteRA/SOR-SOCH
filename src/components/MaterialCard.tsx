@@ -1,23 +1,10 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { FileText, Calendar, BookOpen, ExternalLink, Image, Download } from 'lucide-react';
-import type { Subject } from '../lib/supabase';
-
-// Интерфейс для метаданных материала
-interface MaterialMetadata {
-  id: string;
-  subject_id: string;
-  title: string;
-  type: 'SOR' | 'SOCH';
-  created_at: string;
-  grade: number;
-  language: string;
-  quarter: number;
-  subject?: Subject;
-}
+import { FileText, Calendar, BookOpen, ExternalLink, Image, Download, ArrowRight } from 'lucide-react';
+import type { Material, Subject } from '../lib/supabase';
 
 interface MaterialCardProps {
-  material: MaterialMetadata;
+  material: Material;
   index: number;
   onClick?: () => void;
 }
@@ -32,76 +19,56 @@ export default function MaterialCard({ material, index, onClick }: MaterialCardP
   };
 
   const issor = material.type === 'SOR';
-  const bgColor = issor ? 'from-emerald-50 to-teal-50' : 'from-blue-50 to-cyan-50';
-  const iconBg = issor ? 'bg-emerald-100' : 'bg-blue-100';
-  const iconColor = issor ? 'text-emerald-600' : 'text-blue-600';
-  const badgeBg = issor ? 'bg-emerald-100' : 'bg-blue-100';
-  const badgeText = issor ? 'text-emerald-700' : 'text-blue-700';
-  const accentGradient = issor ? 'from-emerald-500 to-teal-500' : 'from-blue-500 to-cyan-500';
+  const typeLabel = issor ? 'СОР' : 'СОЧ';
+  const accentColor = issor ? 'bg-emerald-500' : 'bg-blue-500';
+  const iconBg = issor ? 'bg-emerald-50 text-emerald-600' : 'bg-blue-50 text-blue-600';
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 20 }}
+      initial={{ opacity: 0, y: 30 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: index * 0.05 }}
+      transition={{ delay: index * 0.05, type: 'spring', damping: 20 }}
       whileHover={{ y: -8, scale: 1.02 }}
       whileTap={{ scale: 0.98 }}
       onClick={onClick}
-      className={`group cursor-pointer relative overflow-hidden rounded-xl bg-gradient-to-br ${bgColor} border border-gray-200 shadow-lg hover:shadow-xl transition-all duration-300 p-6 backdrop-blur-sm`}
+      className="premium-card p-6 group cursor-pointer border border-slate-100 hover:border-indigo-200 transition-all duration-500 h-full flex flex-col"
     >
-      <div className="absolute inset-0 opacity-0 group-hover:opacity-3 bg-white transition-opacity duration-300" />
-
-      <div className="relative z-10">
-        <div className="flex items-start justify-between mb-4">
-          <motion.div
-            className={`${iconBg} p-3 rounded-xl shadow-md group-hover:shadow-lg transition-all duration-300`}
-            whileHover={{ rotate: 10, scale: 1.1 }}
-          >
-            <FileText className={`w-6 h-6 ${iconColor}`} />
-          </motion.div>
-
-          <motion.div
-            initial={{ opacity: 0, scale: 0.8 }}
-            animate={{ opacity: 1, scale: 1 }}
-            className={`${badgeBg} ${badgeText} px-3 py-1 text-xs font-semibold rounded-full`}
-          >
-            {material.type}
-          </motion.div>
+      <div className="flex items-start justify-between mb-6">
+        <div className={`w-14 h-14 rounded-2xl ${iconBg} flex items-center justify-center shadow-inner group-hover:scale-110 transition-transform duration-500`}>
+          <FileText className="w-7 h-7" />
         </div>
+        <div className={`px-4 py-1.5 rounded-full ${accentColor} text-white text-[10px] font-black tracking-widest uppercase shadow-lg`}>
+          {typeLabel}
+        </div>
+      </div>
 
-        <div className="flex-1 min-w-0 mb-4">
-          <h3 className="text-lg font-bold text-gray-900 mb-2 line-clamp-2 group-hover:text-gray-800 transition-colors">
-            {material.title}
-          </h3>
-
-          <div className="space-y-2 text-sm">
-            <div className="flex items-center space-x-2 text-gray-700">
-              <BookOpen className="w-4 h-4 flex-shrink-0" />
-              <span className="font-medium">{material.subject?.name}</span>
-            </div>
-
-            <div className="flex items-center space-x-2 text-gray-600">
-              <Calendar className="w-4 h-4 flex-shrink-0" />
-              <span>{formatDate(material.created_at)}</span>
-            </div>
+      <div className="flex-1">
+        <h3 className="text-xl font-black text-slate-800 leading-tight mb-3 group-hover:text-indigo-600 transition-colors">
+          {material.title}
+        </h3>
+        
+        <div className="grid grid-cols-1 gap-2">
+          <div className="flex items-center space-x-2 text-slate-500 group-hover:text-slate-700 transition-colors">
+            <BookOpen className="w-4 h-4 text-indigo-400" />
+            <span className="text-xs font-bold uppercase tracking-tight">{material.subject?.name}</span>
+          </div>
+          <div className="flex items-center space-x-2 text-slate-400">
+            <Calendar className="w-4 h-4" />
+            <span className="text-[11px] font-medium">{formatDate(material.created_at)}</span>
           </div>
         </div>
+      </div>
 
-        <motion.div
-          className={`flex items-center justify-between pt-4 border-t border-gray-200 border-opacity-50`}
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: index * 0.05 + 0.1 }}
-        >
-          <div className="text-xs text-gray-600 font-medium">
-            Нажмите для просмотра
-          </div>
-          <motion.div
-            className={`w-2.5 h-2.5 rounded-full bg-gradient-to-r ${accentGradient}`}
-            animate={{ scale: [1, 1.3, 1] }}
-            transition={{ duration: 2, repeat: Infinity }}
-          />
-        </motion.div>
+      <div className="mt-8 flex items-center justify-between">
+         <div className="flex items-center space-x-2">
+            <div className={`w-2 h-2 rounded-full ${accentColor} animate-pulse`}></div>
+            <span className="text-[10px] font-black uppercase text-slate-400 group-hover:text-indigo-500 transition-colors">
+              Открыть материал
+            </span>
+         </div>
+         <div className="w-8 h-8 rounded-xl bg-slate-50 flex items-center justify-center text-slate-300 group-hover:bg-indigo-600 group-hover:text-white transition-all transform group-hover:translate-x-1">
+            <ArrowRight className="w-4 h-4" />
+         </div>
       </div>
     </motion.div>
   );

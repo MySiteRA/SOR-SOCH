@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { avatarPreloader } from '../services/avatarPreloader';
 
 interface UseAvatarPreloaderReturn {
@@ -10,9 +10,10 @@ interface UseAvatarPreloaderReturn {
 export function useAvatarPreloader(): UseAvatarPreloaderReturn {
   const [avatarMap, setAvatarMap] = useState<Map<string, string | null>>(new Map());
   const [isLoading, setIsLoading] = useState(false);
+  const avatarMapRef = useRef(avatarMap);
+  avatarMapRef.current = avatarMap;
 
   useEffect(() => {
-    // Слушаем обновления аватарок
     const handleAvatarUpdate = (event: CustomEvent) => {
       const { studentId, avatarUrl } = event.detail;
       setAvatarMap(prev => new Map(prev.set(studentId, avatarUrl)));
@@ -25,33 +26,31 @@ export function useAvatarPreloader(): UseAvatarPreloaderReturn {
     };
   }, []);
 
-  const getAvatar = (studentId: string): string | null => {
-    // Сначала проверяем локальное состояние
-    if (avatarMap.has(studentId)) {
-      return avatarMap.get(studentId) || null;
+  const getAvatar = useCallback((studentId: string): string | null => {
+    // Check local state via ref (doesn't cause re-render)
+    if (avatarMapRef.current.has(studentId)) {
+      return avatarMapRef.current.get(studentId) || null;
     }
 
-    // Затем проверяем кэш
+    // Check cache
     const cachedAvatar = avatarPreloader.getCachedAvatar(studentId);
     if (cachedAvatar !== null) {
-      // Обновляем локальное состояние
-      setAvatarMap(prev => new Map(prev.set(studentId, cachedAvatar)));
       return cachedAvatar;
     }
 
-    // Запускаем загрузку в фоне
+    // Start background load
     avatarPreloader.loadStudentAvatar(studentId).catch(console.error);
     
     return null;
-  };
+  }, []);
 
-  const preloadAvatars = async (studentIds: string[]): Promise<void> => {
+  const preloadAvatars = useCallback(async (studentIds: string[]): Promise<void> => {
     if (studentIds.length === 0) return;
 
     setIsLoading(true);
     
     try {
-      // Сначала загружаем из кэша
+      // Load from cache first
       const initialAvatars = new Map<string, string | null>();
       studentIds.forEach(studentId => {
         const cached = avatarPreloader.getCachedAvatar(studentId);
@@ -70,14 +69,14 @@ export function useAvatarPreloader(): UseAvatarPreloaderReturn {
         });
       }
 
-      // Затем запускаем фоновую загрузку
+      // Start background loading
       await avatarPreloader.preloadAvatars(studentIds);
     } catch (error) {
       console.error('Error preloading avatars:', error);
     } finally {
       setIsLoading(false);
     }
-  };
+  }, []);
 
   return {
     getAvatar,

@@ -83,8 +83,8 @@ export default function AuthPage() {
       const now = Date.now();
       const diff = now - parseInt(savedTime, 10);
 
-      // 3 дня = 259200000 мс
-      if (diff <= 259200000) {
+      // 365 дней = 31536000000 мс (практически бесконечно)
+      if (diff <= 31536000000) {
         handleSuccessfulAuth(student, true);
         return;
       }
@@ -243,246 +243,235 @@ export default function AuthPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-100">
-      <LanguageSwitcher showBackButton={true} onBack={handleBack} />
-      
-      <div className="container mx-auto px-4 py-12">
-        {/* Messages */}
-        <AnimatePresence>
-          {successMessage && (
-            <motion.div
-              initial={{ opacity: 0, y: -10 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -10 }}
-              className="bg-green-100 border border-green-200 text-green-700 px-4 py-3 rounded-xl mb-6 max-w-2xl mx-auto text-center"
+    <div className="min-h-screen pb-safe flex flex-col">
+      <header className="sticky top-0 z-50 glass border-b border-white/20">
+        <div className="container mx-auto px-4 py-4">
+          <div className="flex items-center justify-between">
+            <motion.button
+              onClick={handleBack}
+              whileHover={{ scale: 1.1, x: -5 }}
+              whileTap={{ scale: 0.9 }}
+              className="w-10 h-10 flex items-center justify-center bg-white rounded-xl shadow-sm border border-slate-100 text-slate-600 hover:text-indigo-600 transition-all font-bold"
             >
-              {successMessage}
-            </motion.div>
-          )}
-          
-          {error && (
-            <motion.div
-              initial={{ opacity: 0, y: -10 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -10 }}
-              className="bg-red-100 border border-red-200 text-red-700 px-4 py-3 rounded-xl mb-6 max-w-2xl mx-auto text-center"
-            >
-              {error}
-              <button
-                onClick={() => setError(null)}
-                className="ml-2 text-red-500 hover:text-red-700"
+              <Key className="w-5 h-5 rotate-45" />
+            </motion.button>
+            <LanguageSwitcher showBackButton={false} />
+          </div>
+        </div>
+      </header>
+
+      <div className="flex-1 flex items-center justify-center px-4 py-12 animate-card-appear">
+        <div className="w-full max-w-md">
+           {/* Messages */}
+          <AnimatePresence>
+            {successMessage && (
+              <motion.div
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.95 }}
+                className="mb-8 p-4 bg-emerald-500 text-white rounded-[2rem] shadow-lg shadow-emerald-100 flex items-center justify-center font-black uppercase text-xs tracking-widest text-center"
               >
-                ✕
-              </button>
-            </motion.div>
-          )}
-        </AnimatePresence>
+                <CheckCircle className="w-4 h-4 mr-3" />
+                {successMessage}
+              </motion.div>
+            )}
+            
+            {error && (
+              <motion.div
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.95 }}
+                className="mb-8 p-4 bg-rose-500 text-white rounded-[2rem] shadow-lg shadow-rose-100 flex items-center justify-between font-bold"
+              >
+                <div className="flex items-center">
+                   <Lock className="w-4 h-4 mr-3" />
+                   <span className="text-sm">{error}</span>
+                </div>
+                <button onClick={() => setError(null)} className="p-1 hover:bg-white/20 rounded">✕</button>
+              </motion.div>
+            )}
+          </AnimatePresence>
 
-        <motion.div
-          initial={{ opacity: 0, scale: 0.95 }}
-          animate={{ opacity: 1, scale: 1 }}
-          className="max-w-md mx-auto"
-        >
-          <div className="bg-white rounded-2xl shadow-xl p-8">
-            <div className="text-center mb-6">
-              <div className="flex justify-center mb-4">
-                <StudentAvatar 
-                  student={student} 
-                  avatarUrl={profile?.avatar_url}
-                  size="lg"
-                />
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="premium-card p-10 relative overflow-hidden text-center"
+          >
+            <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-500 opacity-5 blur-3xl -mr-16 -mt-16"></div>
+            
+            <div className="relative z-10">
+              <div className="flex justify-center mb-8">
+                <div className="relative p-1 bg-white rounded-[2.5rem] shadow-premium">
+                  <StudentAvatar 
+                    student={student} 
+                    avatarUrl={profile?.avatar_url}
+                    size="xl"
+                  />
+                  <div className="absolute -bottom-2 -right-2 w-12 h-12 bg-indigo-600 rounded-2xl flex items-center justify-center text-white shadow-xl border-4 border-white transform rotate-12">
+                     {authStep === 'key' ? <Key className="w-6 h-6" /> : <Lock className="w-6 h-6" />}
+                  </div>
+                </div>
               </div>
-              <h2 className="text-2xl font-bold text-gray-900 mb-2">{student.name}</h2>
-              <p className="text-gray-600">
-                {authStep === 'key' && t('auth.enterKey')}
-                {authStep === 'password' && t('auth.enterPassword')}
-                {authStep === 'create-password' && t('auth.createPassword')}
-              </p>
-            </div>
 
-            <AnimatePresence mode="wait">
-              {/* Key Input */}
-              {authStep === 'key' && (
-                <motion.form
-                  key="key-form"
-                  initial={{ x: -20, opacity: 0 }}
-                  animate={{ x: 0, opacity: 1 }}
-                  exit={{ x: 20, opacity: 0 }}
-                  onSubmit={handleKeySubmit}
-                  className="space-y-4"
-                >
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      {t('auth.enterKey')}
-                    </label>
-                    <div className="relative">
-                      <Key className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
-                      <input
+              <h2 className="text-2xl font-black text-slate-800 tracking-tight mb-2">{student.name}</h2>
+              <p className="text-[10px] font-black uppercase tracking-widest text-indigo-500 mb-10">
+                {authStep === 'key' && 'Требуется ключ доступа'}
+                {authStep === 'password' && 'Введите ваш пароль'}
+                {authStep === 'create-password' && 'Придумайте пароль'}
+              </p>
+
+              <AnimatePresence mode="wait">
+                {authStep === 'key' && (
+                  <motion.form
+                    key="key-form"
+                    initial={{ x: -20, opacity: 0 }}
+                    animate={{ x: 0, opacity: 1 }}
+                    exit={{ x: 20, opacity: 0 }}
+                    onSubmit={handleKeySubmit}
+                    className="space-y-6"
+                  >
+                    <div className="relative group">
+                       <input
                         type="text"
                         value={keyValue}
                         onChange={(e) => setKeyValue(formatKeyInput(e.target.value.toUpperCase()))}
-                        placeholder={t('auth.keyPlaceholder')}
-                        className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent font-mono text-center tracking-wider"
+                        placeholder="0000-0000-0000"
+                        className="w-full px-4 py-5 bg-slate-50 border-none rounded-3xl focus:ring-4 focus:ring-indigo-100 outline-none font-mono text-center text-xl font-black tracking-[0.2em] text-indigo-600 transition-all placeholder:text-slate-300 shadow-inner"
                         maxLength={14}
+                        autoFocus
+                        autoCapitalize="characters"
+                        autoCorrect="off"
                         required
                       />
                     </div>
-                  </div>
 
-                  <button
-                    type="submit"
-                    disabled={isProcessing || keyValue.length < 14}
-                    className="w-full bg-indigo-600 text-white py-3 rounded-xl font-medium hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                  >
-                    {isProcessing ? <Loader2 className="w-5 h-5 animate-spin mx-auto" /> : t('auth.continue')}
-                  </button>
-                </motion.form>
-              )}
-
-              {/* Password Input */}
-              {authStep === 'password' && (
-                <motion.form
-                  key="password-form"
-                  initial={{ x: -20, opacity: 0 }}
-                  animate={{ x: 0, opacity: 1 }}
-                  exit={{ x: 20, opacity: 0 }}
-                  onSubmit={handlePasswordSubmit}
-                  className="space-y-4"
-                >
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      {t('auth.enterPassword')}
-                    </label>
-                    <div className="relative">
-                      <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
-                      <input
-                        type={showPassword ? 'text' : 'password'}
-                        value={password}
-                        onChange={(e) => setPassword(e.target.value)}
-                        placeholder={t('auth.passwordPlaceholder')}
-                        className="w-full pl-10 pr-12 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-                        required
-                      />
-                      <button
-                        type="button"
-                        onClick={() => setShowPassword(!showPassword)}
-                        className="absolute right-3 top-1/2 transform -translate-y-1/2 p-1 hover:bg-gray-100 rounded"
-                      >
-                        {showPassword ? (
-                          <EyeOff className="w-4 h-4 text-gray-400" />
-                        ) : (
-                          <Eye className="w-4 h-4 text-gray-400" />
-                        )}
-                      </button>
-                    </div>
-                  </div>
-
-                  <div className="space-y-3">
-                    <button
+                    <motion.button
                       type="submit"
-                      disabled={isProcessing || !password}
-                      className="w-full bg-indigo-600 text-white py-3 rounded-xl font-medium hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                      whileHover={{ scale: 1.02 }}
+                      whileTap={{ scale: 0.98 }}
+                      disabled={isProcessing || keyValue.length < 14}
+                      className="w-full bg-indigo-600 text-white py-5 rounded-3xl font-black uppercase text-xs tracking-widest shadow-xl shadow-indigo-100 hover:shadow-2xl transition-all disabled:opacity-50 flex items-center justify-center"
                     >
-                      {isProcessing ? <Loader2 className="w-5 h-5 animate-spin mx-auto" /> : t('auth.login')}
-                    </button>
-                    
-                    <button
-                      type="button"
-                      onClick={() => setAuthStep('key')}
-                      className="w-full bg-gray-100 text-gray-700 py-3 rounded-xl font-medium hover:bg-gray-200 transition-colors"
-                    >
-                      {t('auth.enterKey')}
-                    </button>
-                  </div>
-                </motion.form>
-              )}
+                      {isProcessing ? <Loader2 className="w-5 h-5 animate-spin" /> : 'Продолжить'}
+                    </motion.button>
+                  </motion.form>
+                )}
 
-              {/* Create Password */}
-              {authStep === 'create-password' && (
-                <motion.form
-                  key="create-password-form"
-                  initial={{ x: -20, opacity: 0 }}
-                  animate={{ x: 0, opacity: 1 }}
-                  exit={{ x: 20, opacity: 0 }}
-                  onSubmit={handleCreatePasswordSubmit}
-                  className="space-y-4"
-                >
-                  <div className="p-3 bg-green-50 border border-green-200 rounded-xl text-green-700 text-sm mb-4">
-                    <div className="flex items-center">
-                      <CheckCircle className="w-4 h-4 mr-2" />
-                      {t('auth.keyVerified')}
-                    </div>
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      {t('auth.newPasswordPlaceholder')}
-                    </label>
-                    <div className="relative">
-                      <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
-                      <input
-                        type={showPassword ? 'text' : 'password'}
-                        value={password}
-                        onChange={(e) => setPassword(e.target.value)}
-                        placeholder={t('auth.newPasswordPlaceholder')}
-                        className="w-full pl-10 pr-12 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-                        required
-                        minLength={4}
-                      />
-                      <button
-                        type="button"
-                        onClick={() => setShowPassword(!showPassword)}
-                        className="absolute right-3 top-1/2 transform -translate-y-1/2 p-1 hover:bg-gray-100 rounded"
-                      >
-                        {showPassword ? (
-                          <EyeOff className="w-4 h-4 text-gray-400" />
-                        ) : (
-                          <Eye className="w-4 h-4 text-gray-400" />
-                        )}
-                      </button>
-                    </div>
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      {t('auth.confirmPasswordPlaceholder')}
-                    </label>
-                    <div className="relative">
-                      <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
-                      <input
-                        type={showConfirmPassword ? 'text' : 'password'}
-                        value={confirmPassword}
-                        onChange={(e) => setConfirmPassword(e.target.value)}
-                        placeholder={t('auth.confirmPasswordPlaceholder')}
-                        className="w-full pl-10 pr-12 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-                        required
-                      />
-                      <button
-                        type="button"
-                        onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                        className="absolute right-3 top-1/2 transform -translate-y-1/2 p-1 hover:bg-gray-100 rounded"
-                      >
-                        {showConfirmPassword ? (
-                          <EyeOff className="w-4 h-4 text-gray-400" />
-                        ) : (
-                          <Eye className="w-4 h-4 text-gray-400" />
-                        )}
-                      </button>
-                    </div>
-                  </div>
-
-                  <button
-                    type="submit"
-                    disabled={isProcessing || !password || !confirmPassword}
-                    className="w-full bg-indigo-600 text-white py-3 rounded-xl font-medium hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                {authStep === 'password' && (
+                  <motion.form
+                    key="password-form"
+                    initial={{ x: -20, opacity: 0 }}
+                    animate={{ x: 0, opacity: 1 }}
+                    exit={{ x: 20, opacity: 0 }}
+                    onSubmit={handlePasswordSubmit}
+                    className="space-y-6 text-left"
                   >
-                    {isProcessing ? <Loader2 className="w-5 h-5 animate-spin mx-auto" /> : t('auth.createPasswordButton')}
-                  </button>
-                </motion.form>
-              )}
-            </AnimatePresence>
-          </div>
-        </motion.div>
+                    <div className="space-y-2">
+                      <div className="relative">
+                        <input
+                          type={showPassword ? 'text' : 'password'}
+                          value={password}
+                          onChange={(e) => setPassword(e.target.value)}
+                          placeholder="Ваш пароль"
+                          className="w-full px-8 py-5 bg-slate-50 border-none rounded-3xl focus:ring-4 focus:ring-indigo-100 outline-none font-bold text-slate-700 transition-all placeholder:text-slate-300 shadow-inner"
+                          autoFocus
+                          required
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setShowPassword(!showPassword)}
+                          className="absolute right-6 top-1/2 -translate-y-1/2 p-2 hover:bg-white rounded-xl transition-colors"
+                        >
+                          {showPassword ? <EyeOff className="w-5 h-5 text-slate-400" /> : <Eye className="w-5 h-5 text-slate-400" />}
+                        </button>
+                      </div>
+                    </div>
+
+                    <div className="space-y-4">
+                      <motion.button
+                        type="submit"
+                        whileHover={{ scale: 1.02 }}
+                        whileTap={{ scale: 0.98 }}
+                        disabled={isProcessing || !password}
+                        className="w-full bg-indigo-600 text-white py-5 rounded-3xl font-black uppercase text-xs tracking-widest shadow-xl shadow-indigo-100 hover:shadow-2xl transition-all disabled:opacity-50 flex items-center justify-center"
+                      >
+                        {isProcessing ? <Loader2 className="w-5 h-5 animate-spin" /> : 'Войти в систему'}
+                      </motion.button>
+                      
+                      <button
+                        type="button"
+                        onClick={() => setAuthStep('key')}
+                        className="w-full py-4 text-slate-400 font-bold hover:text-indigo-600 transition-colors text-xs uppercase tracking-widest"
+                      >
+                        Использовать ключ доступа
+                      </button>
+                    </div>
+                  </motion.form>
+                )}
+
+                {authStep === 'create-password' && (
+                  <motion.form
+                    key="create-password-form"
+                    initial={{ x: -20, opacity: 0 }}
+                    animate={{ x: 0, opacity: 1 }}
+                    exit={{ x: 20, opacity: 0 }}
+                    onSubmit={handleCreatePasswordSubmit}
+                    className="space-y-6 text-left"
+                  >
+                    <div className="space-y-4">
+                      <div className="relative">
+                        <input
+                          type={showPassword ? 'text' : 'password'}
+                          value={password}
+                          onChange={(e) => setPassword(e.target.value)}
+                          placeholder="Новый пароль"
+                          className="w-full px-8 py-5 bg-slate-50 border-none rounded-3xl focus:ring-4 focus:ring-indigo-100 outline-none font-bold text-slate-700 transition-all placeholder:text-slate-300 shadow-inner"
+                          required
+                          minLength={4}
+                        />
+                         <button
+                          type="button"
+                          onClick={() => setShowPassword(!showPassword)}
+                          className="absolute right-6 top-1/2 -translate-y-1/2 p-2 hover:bg-white rounded-xl transition-colors"
+                        >
+                          {showPassword ? <EyeOff className="w-5 h-5 text-slate-400" /> : <Eye className="w-5 h-5 text-slate-400" />}
+                        </button>
+                      </div>
+
+                      <div className="relative">
+                        <input
+                          type={showConfirmPassword ? 'text' : 'password'}
+                          value={confirmPassword}
+                          onChange={(e) => setConfirmPassword(e.target.value)}
+                          placeholder="Повторите пароль"
+                          className="w-full px-8 py-5 bg-slate-50 border-none rounded-3xl focus:ring-4 focus:ring-indigo-100 outline-none font-bold text-slate-700 transition-all placeholder:text-slate-300 shadow-inner"
+                          required
+                        />
+                         <button
+                          type="button"
+                          onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                          className="absolute right-6 top-1/2 -translate-y-1/2 p-2 hover:bg-white rounded-xl transition-colors"
+                        >
+                          {showConfirmPassword ? <EyeOff className="w-5 h-5 text-slate-400" /> : <Eye className="w-5 h-5 text-slate-400" />}
+                        </button>
+                      </div>
+                    </div>
+
+                    <motion.button
+                      type="submit"
+                      whileHover={{ scale: 1.02 }}
+                      whileTap={{ scale: 0.98 }}
+                      disabled={isProcessing || !password || !confirmPassword}
+                      className="w-full bg-indigo-600 text-white py-5 rounded-3xl font-black uppercase text-xs tracking-widest shadow-xl shadow-indigo-100 hover:shadow-2xl transition-all disabled:opacity-50 flex items-center justify-center"
+                    >
+                      {isProcessing ? <Loader2 className="w-5 h-5 animate-spin" /> : 'Создать и войти'}
+                    </motion.button>
+                  </motion.form>
+                )}
+              </AnimatePresence>
+            </div>
+          </motion.div>
+        </div>
       </div>
     </div>
   );

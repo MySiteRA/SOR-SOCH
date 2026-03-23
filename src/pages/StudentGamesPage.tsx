@@ -1,7 +1,19 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ArrowLeft, MoreVertical, LogOut, Trash2, User as UserIcon, Calendar, MessageCircle, Gamepad2, Users, Play, Plus, Crown, Clock } from 'lucide-react';
-import { useLanguage } from '../contexts/LanguageContext';
+import { 
+  ArrowLeft, 
+  MoreVertical, 
+  Trash2, 
+  User as UserIcon, 
+  Calendar, 
+  MessageCircle, 
+  Gamepad2, 
+  Users, 
+  Plus, 
+  Loader2, 
+  LogOut, 
+  Crown 
+} from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import LoadingSpinner from '../components/LoadingSpinner';
 import { checkStudentKeyValidity } from '../lib/api';
@@ -16,11 +28,10 @@ import {
   subscribeToActiveGames, 
   getGameTypeName, 
   getGameTypeIcon, 
-  getGameTypeColor,
   getPlayerNumber,
   type FirebaseGame 
 } from '../services/firebaseGameService';
-import type { Student, Game } from '../lib/supabase';
+import type { Student } from '../lib/supabase';
 
 const gameTypes = [
   {
@@ -53,7 +64,6 @@ const gameTypes = [
 ];
 
 export default function StudentGamesPage() {
-  const { t } = useLanguage();
   const navigate = useNavigate();
   const [studentData, setStudentData] = useState<{student: Student, className: string} | null>(null);
   const [activeGames, setActiveGames] = useState<FirebaseGame[]>([]);
@@ -61,53 +71,51 @@ export default function StudentGamesPage() {
   const [error, setError] = useState<string | null>(null);
   const [creatingGame, setCreatingGame] = useState<string | null>(null);
 
+  // 1) Load student data from localStorage
   useEffect(() => {
     const saved = localStorage.getItem('studentDashboardData');
     if (saved) {
       const data = JSON.parse(saved);
       setStudentData(data);
-      
-      // Проверяем валидность ключа студента
-      validateStudentKey(data.student.id);
-      
-      setupGameSubscription(data.student.class_id);
     } else {
       navigate('/', { replace: true });
     }
-  }, []);
+  }, [navigate]);
 
-  const validateStudentKey = async (studentId: string) => {
-    try {
-      const isValid = await checkStudentKeyValidity(studentId);
-      
-      if (!isValid) {
-        // Ключ больше не валиден, принудительно разлогиниваем
-        localStorage.removeItem('studentDashboardData');
-        localStorage.removeItem('studentId');
-        localStorage.removeItem('createdAt');
-        localStorage.setItem('skipAutoLogin', 'true');
-        navigate('/', { replace: true });
+  // 2) Once studentData is available, validate key and subscribe to games
+  useEffect(() => {
+    if (!studentData) return;
+
+    // Validate key
+    const validateKey = async () => {
+      try {
+        const isValid = await checkStudentKeyValidity(studentData.student.id);
+        if (!isValid) {
+          localStorage.removeItem('studentDashboardData');
+          localStorage.removeItem('studentId');
+          localStorage.removeItem('createdAt');
+          localStorage.setItem('skipAutoLogin', 'true');
+          navigate('/', { replace: true });
+        }
+      } catch (error) {
+        console.error('Error validating student key:', error);
       }
-    } catch (error) {
-      console.error('Error validating student key:', error);
-      // В случае ошибки проверки, не разлогиниваем
-    }
-  };
+    };
+    validateKey();
 
-  const setupGameSubscription = (classId: string) => {
+    // Subscribe to active games
     setLoading(true);
     setError(null);
     
-    const unsubscribe = subscribeToActiveGames(classId, (games) => {
+    const unsubscribe = subscribeToActiveGames(studentData.student.class_id, (games) => {
       setActiveGames(games);
       setLoading(false);
     });
 
-    // Очищаем подписку при размонтировании компонента
     return () => {
       unsubscribe();
     };
-  };
+  }, [studentData, navigate]);
 
   const handleCreateGame = async (gameType: 'truth_or_dare' | 'quiz' | 'mafia') => {
     if (!studentData) return;
@@ -121,17 +129,17 @@ export default function StudentGamesPage() {
         studentData.student.id,
         studentData.student.name,
         gameType,
-        10 // Максимум 10 игроков для всех типов игр
+        10
       );
 
-      // Перенаправляем на страницу игры
       navigate(`/student-game/${gameId}`, {
         state: {
           student: studentData.student,
           className: studentData.className
         }
       });
-    } catch (err) {
+    } catch (error) {
+      console.error('Error creating game:', error);
       setError('Ошибка создания игры');
     } finally {
       setCreatingGame(null);
@@ -191,97 +199,85 @@ export default function StudentGamesPage() {
     const now = Date.now();
     const diff = now - timestamp;
     const minutes = Math.floor(diff / 60000);
-    
-    if (minutes < 1) return 'только что';
+    if (minutes < 1) return 'Только что';
     if (minutes < 60) return `${minutes} мин. назад`;
-    
     const hours = Math.floor(minutes / 60);
     if (hours < 24) return `${hours} ч. назад`;
-    
-    const days = Math.floor(hours / 24);
-    return `${days} дн. назад`;
+    return new Date(timestamp).toLocaleDateString();
   };
 
-  if (!studentData) {
-    return null;
+  if (!studentData || loading) {
+    return (
+      <div className="min-h-screen bg-slate-50 flex items-center justify-center">
+        <LoadingSpinner />
+      </div>
+    );
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-slate-100">
-      {/* Header */}
-      <header className="bg-white/80 backdrop-blur-lg border-b border-slate-200">
+    <div className="min-h-screen pb-24 md:pb-8">
+      {/* Premium Header */}
+      <header className="sticky top-0 z-50 glass border-b border-white/20">
         <div className="container mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-4">
-              <button
+              <motion.button
                 onClick={() => navigate('/student-dashboard')}
-                className="flex items-center space-x-2 text-slate-600 hover:text-slate-900 font-medium transition-colors"
+                whileHover={{ scale: 1.1, x: -5 }}
+                whileTap={{ scale: 0.9 }}
+                className="w-10 h-10 flex items-center justify-center bg-white rounded-xl shadow-sm border border-slate-100 text-slate-600 hover:text-indigo-600 transition-all font-bold"
               >
-                <ArrowLeft className="w-5 h-5" />
-                <span>{t('common.back')}</span>
-              </button>
+                <ArrowLeft className="w-6 h-6" />
+              </motion.button>
               <div>
-                <h1 className="text-2xl font-bold text-slate-900 flex items-center space-x-2">
-                  <Gamepad2 className="w-6 h-6 text-emerald-600" />
-                  <span>Игры с классом</span>
+                <h1 className="text-xl font-black text-slate-800 tracking-tight leading-none mb-1 flex items-center">
+                  <Gamepad2 className="w-5 h-5 mr-2 text-indigo-600" />
+                  Игротека
                 </h1>
-                <p className="text-slate-500 text-sm">{studentData.className}</p>
+                <p className="text-[10px] font-black uppercase tracking-widest text-indigo-500">
+                  {studentData.className}
+                </p>
               </div>
             </div>
 
             <div className="flex items-center space-x-4">
-              {/* Session Indicator */}
-              <motion.div
-                initial={{ opacity: 0, scale: 0 }}
-                animate={{ opacity: 1, scale: 1 }}
-                className="w-3 h-3 bg-emerald-500 rounded-full shadow-lg animate-pulse"
-                title="Активный сеанс"
-              />
+              <div className="w-10 h-10 bg-emerald-50 rounded-full flex items-center justify-center">
+                <div className="w-3 h-3 bg-emerald-500 rounded-full animate-pulse shadow-[0_0_10px_rgba(16,185,129,0.5)]"></div>
+              </div>
 
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <motion.button
                     whileHover={{ scale: 1.05 }}
                     whileTap={{ scale: 0.95 }}
-                    className="flex items-center justify-center w-10 h-10 bg-slate-100 hover:bg-slate-200 rounded-xl transition-all duration-200 shadow-sm hover:shadow-md"
+                    className="w-10 h-10 flex items-center justify-center bg-white rounded-xl shadow-sm border border-slate-100 text-slate-600 hover:text-indigo-600 transition-all font-bold"
                   >
-                    <MoreVertical className="w-5 h-5 text-slate-600" />
+                    <MoreVertical className="w-5 h-5" />
                   </motion.button>
                 </DropdownMenuTrigger>
-
-                <DropdownMenuContent align="end" className="w-48 mt-2" asChild>
-                  <motion.div
-                    initial={{ opacity: 0, scale: 0.95, y: -10 }}
-                    animate={{ opacity: 1, scale: 1, y: 0 }}
-                    exit={{ opacity: 0, scale: 0.95, y: -10 }}
-                    transition={{ duration: 0.15, ease: "easeOut" }}
-                  >
-                    <div>
-                      <DropdownMenuItem onClick={handleProfileClick} className="cursor-pointer">
-                        <UserIcon className="w-4 h-4 mr-3 text-emerald-600" />
-                        <span className="text-slate-700">Профиль</span>
-                      </DropdownMenuItem>
-
-                      <DropdownMenuItem onClick={handleScheduleClick} className="cursor-pointer">
-                        <Calendar className="w-4 h-4 mr-3 text-blue-600" />
-                        <span className="text-slate-700">Расписание</span>
-                      </DropdownMenuItem>
-
-                      <DropdownMenuItem onClick={handleChatClick} className="cursor-pointer">
-                        <MessageCircle className="w-4 h-4 mr-3 text-teal-600" />
-                        <span className="text-slate-700">Чат класса</span>
-                      </DropdownMenuItem>
-
-                      <DropdownMenuItem onClick={handleForgetSession} className="cursor-pointer">
-                        <Trash2 className="w-4 h-4 mr-3 text-amber-600" />
-                        <span className="text-slate-700">Забыть сеанс (полный выход)</span>
-                      </DropdownMenuItem>
-
-                      <DropdownMenuItem onClick={handleLogout} className="cursor-pointer">
-                        <LogOut className="w-4 h-4 mr-3 text-red-600" />
-                        <span className="text-slate-700">Выйти (сеанс сохранится)</span>
-                      </DropdownMenuItem>
-                    </div>
+                <DropdownMenuContent align="end" className="w-56 mt-2 glass border-none shadow-2xl p-2 rounded-2xl overflow-hidden" asChild>
+                  <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }}>
+                    <DropdownMenuItem onClick={handleProfileClick} className="flex items-center p-3 rounded-xl cursor-pointer hover:bg-white/50 transition-colors">
+                      <UserIcon className="w-4 h-4 mr-3 text-indigo-500" />
+                      <span className="font-bold text-slate-700">Профиль</span>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={handleScheduleClick} className="flex items-center p-3 rounded-xl cursor-pointer hover:bg-white/50 transition-colors">
+                      <Calendar className="w-4 h-4 mr-3 text-blue-500" />
+                      <span className="font-bold text-slate-700">Расписание</span>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={handleChatClick} className="flex items-center p-3 rounded-xl cursor-pointer hover:bg-white/50 transition-colors">
+                      <MessageCircle className="w-4 h-4 mr-3 text-teal-500" />
+                      <span className="font-bold text-slate-700">Чат класса</span>
+                    </DropdownMenuItem>
+                    <div className="h-px bg-slate-100 my-2 mx-2"></div>
+                    <DropdownMenuItem onClick={handleForgetSession} className="flex items-center p-3 rounded-xl cursor-pointer hover:bg-rose-50 transition-colors group">
+                      <Trash2 className="w-4 h-4 mr-3 text-rose-400 group-hover:text-rose-600" />
+                      <span className="font-bold text-slate-600 group-hover:text-rose-600">Забыть сеанс</span>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={handleLogout} className="flex items-center p-3 rounded-xl cursor-pointer hover:bg-rose-50 transition-colors group">
+                      <LogOut className="w-4 h-4 mr-3 text-rose-400 group-hover:text-rose-600" />
+                      <span className="font-bold text-slate-600 group-hover:text-rose-600">Выйти</span>
+                    </DropdownMenuItem>
                   </motion.div>
                 </DropdownMenuContent>
               </DropdownMenu>
@@ -290,35 +286,35 @@ export default function StudentGamesPage() {
         </div>
       </header>
 
-      <div className="container mx-auto px-4 py-8">
+      <div className="container mx-auto px-4 py-8 max-w-6xl animate-card-appear">
         {/* Error Message */}
         {error && (
           <motion.div
-            initial={{ opacity: 0, y: -10 }}
+            initial={{ opacity: 0, y: -20 }}
             animate={{ opacity: 1, y: 0 }}
-            className="bg-red-100 border border-red-200 text-red-700 px-4 py-3 rounded-lg mb-6"
+            className="mb-8 p-4 bg-rose-500 text-white rounded-2xl shadow-lg shadow-rose-200 flex items-center justify-between font-bold"
           >
-            {error}
-            <button
-              onClick={() => setError(null)}
-              className="ml-2 text-red-500 hover:text-red-700"
-            >
-              ✕
-            </button>
+            <div className="flex items-center">
+               <Trash2 className="w-5 h-5 mr-3" />
+               {error}
+            </div>
+            <button onClick={() => setError(null)} className="p-2 hover:bg-white/20 rounded-lg transition-colors">✕</button>
           </motion.div>
         )}
 
-        {/* Active Games */}
+        {/* Active Games Bento */}
         {activeGames.length > 0 && (
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="mb-12"
-          >
-            <div className="mb-6">
-              <h2 className="text-2xl font-bold text-slate-900">Активные игры</h2>
-              <p className="text-slate-500 mt-1">Присоединяйтесь к происходящим играм или создавайте свою</p>
+          <div className="mb-12">
+            <div className="mb-6 flex items-end justify-between">
+              <div>
+                 <p className="text-[10px] font-black uppercase tracking-widest text-indigo-500 mb-1">Live</p>
+                 <h2 className="text-2xl font-black text-slate-800 tracking-tight">Активные игры</h2>
+              </div>
+              <div className="px-3 py-1 bg-emerald-100 text-emerald-600 rounded-lg text-[10px] font-black uppercase tracking-widest animate-pulse">
+                 {activeGames.length} {activeGames.length === 1 ? 'игра' : 'игры'} идёт
+              </div>
             </div>
+            
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               {activeGames.map((game, index) => {
                 const playerCount = getPlayerCount(game);
@@ -331,232 +327,182 @@ export default function StudentGamesPage() {
                     key={game.id}
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: index * 0.05 }}
-                    whileHover={{ scale: 1.02, y: -4 }}
+                    transition={{ delay: index * 0.1 }}
+                    whileHover={{ scale: 1.02, y: -5 }}
                     whileTap={{ scale: 0.98 }}
                     onClick={() => handleJoinGame(game)}
-                    className="bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 cursor-pointer border border-slate-200 p-6 group"
+                    className="premium-card p-6 cursor-pointer group hover:border-indigo-200 transition-all duration-300"
                   >
-                    <div className="space-y-5">
-                      <div className="flex items-start justify-between">
-                        <div className="flex items-center space-x-4">
-                          <div className="w-14 h-14 bg-gradient-to-br from-emerald-100 to-teal-100 rounded-2xl flex items-center justify-center text-3xl group-hover:scale-110 transition-transform duration-300">
-                            {getGameTypeIcon(game.gameType)}
-                          </div>
-                          <div>
-                            <h3 className="text-lg font-bold text-slate-900">
-                              {getGameTypeName(game.gameType)}
-                            </h3>
-                            <p className="text-sm text-slate-500 mt-1 flex items-center">
-                              {isCreator && <Crown className="w-3.5 h-3.5 inline mr-1.5 text-amber-500" />}
-                              {game.status === 'waiting'
-                                ? 'Ожидание игроков'
-                                : isInGame
-                                  ? `В игре • Номер: ${currentPlayerNumber}`
-                                  : 'Игра идёт'
-                              }
-                            </p>
-                          </div>
+                    <div className="flex items-start justify-between mb-6">
+                      <div className="flex items-center space-x-4">
+                        <div className="w-16 h-16 bg-gradient-to-br from-indigo-50 to-purple-50 rounded-[1.5rem] flex items-center justify-center text-3xl group-hover:scale-110 transition-transform duration-300 shadow-sm">
+                          {getGameTypeIcon(game.gameType)}
                         </div>
-
-                        <div className="text-right">
-                          <div className="inline-block bg-emerald-50 rounded-lg px-3 py-2">
-                            <div className="flex items-center space-x-1.5 text-emerald-700 font-semibold">
-                              <Users className="w-4 h-4" />
-                              <span>{playerCount}/{game.maxPlayers}</span>
-                            </div>
+                        <div>
+                          <h3 className="text-lg font-black text-slate-800 leading-none mb-1">
+                            {getGameTypeName(game.gameType)}
+                          </h3>
+                          <div className="flex items-center space-x-2">
+                             <span className={`text-[10px] font-black uppercase tracking-widest ${game.status === 'waiting' ? 'text-amber-500' : 'text-emerald-500'}`}>
+                                {game.status === 'waiting' ? 'Ожидание' : 'В процессе'}
+                             </span>
+                             {isCreator && <Crown className="w-3 h-3 text-amber-500 shadow-sm" />}
                           </div>
                         </div>
                       </div>
-
-                      <div className="h-px bg-gradient-to-r from-slate-200 to-transparent"></div>
-
-                      <div className="flex items-center justify-between">
-                        <div className="flex -space-x-2">
-                          {game.players && Object.entries(game.players).slice(0, 4).map(([userId, player], idx) => (
-                            <motion.div
-                              key={userId}
-                              whileHover={{ scale: 1.2, zIndex: 50 }}
-                              className="w-8 h-8 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-full flex items-center justify-center border-2 border-white text-white text-xs font-bold hover:shadow-lg transition-shadow cursor-pointer"
-                              style={{ zIndex: 4 - idx }}
-                              title={player.name}
-                            >
-                              {player.name.split(' ').map(n => n[0]).slice(0, 2).join('')}
-                            </motion.div>
-                          ))}
-                          {playerCount > 4 && (
-                            <div className="w-8 h-8 bg-slate-400 rounded-full flex items-center justify-center border-2 border-white text-white text-xs font-bold">
-                              +{playerCount - 4}
-                            </div>
-                          )}
-                        </div>
-
-                        <div className="flex items-center space-x-2 text-slate-500 text-xs">
-                          <Clock className="w-3.5 h-3.5" />
-                          <span>{formatTimeAgo(game.createdAt || 0)}</span>
-                        </div>
+                      <div className="bg-slate-50 border border-slate-100 px-3 py-2 rounded-2xl flex items-center space-x-2">
+                        <Users className="w-4 h-4 text-indigo-500" />
+                        <span className="font-black text-slate-700 text-sm">{playerCount}/{game.maxPlayers}</span>
                       </div>
+                    </div>
 
-                      <div className="flex gap-3 pt-2">
-                        <div className="flex-1">
-                          <span className={`block px-3 py-2 rounded-lg text-sm font-semibold text-center transition-all ${
-                            isInGame
-                              ? 'bg-emerald-100 text-emerald-800'
-                              : game.status === 'waiting'
-                                ? 'bg-blue-100 text-blue-800'
-                                : 'bg-amber-100 text-amber-800'
-                          }`}>
-                            {isInGame
-                              ? `Игрок ${currentPlayerNumber}`
-                              : game.status === 'waiting'
-                                ? 'Присоединиться'
-                                : 'Присоединиться'
-                            }
-                          </span>
-                        </div>
+                    <div className="h-px bg-slate-100 w-full mb-6"></div>
+
+                    <div className="flex items-center justify-between">
+                      <div className="flex -space-x-3">
+                        {game.players && Object.entries(game.players).slice(0, 5).map(([userId, player], idx) => (
+                           <div
+                             key={userId}
+                             className="w-10 h-10 bg-indigo-600 rounded-2xl flex items-center justify-center border-4 border-white text-white text-[10px] font-black uppercase tracking-tighter"
+                             style={{ zIndex: 10 - idx }}
+                           >
+                             {player.name.split(' ').map(n => n[0]).slice(0, 2).join('')}
+                           </div>
+                        ))}
+                        {playerCount > 5 && (
+                           <div className="w-10 h-10 bg-slate-100 rounded-2xl flex items-center justify-center border-4 border-white text-slate-400 text-[10px] font-black" style={{ zIndex: 1 }}>
+                              +{playerCount - 5}
+                           </div>
+                        )}
                       </div>
+                      
+                      <button className={`px-6 py-3 rounded-2xl font-black uppercase text-[10px] tracking-widest transition-all ${
+                         isInGame ? 'bg-indigo-600 text-white shadow-xl shadow-indigo-100' : 'bg-slate-50 text-slate-400 group-hover:bg-indigo-600 group-hover:text-white'
+                      }`}>
+                         {isInGame ? 'Вернуться' : 'Присоединиться'}
+                      </button>
                     </div>
                   </motion.div>
                 );
               })}
             </div>
-          </motion.div>
+          </div>
         )}
 
-        {/* Game Types */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="mb-12"
-        >
+        {/* Create Game Section */}
+        <div className="mb-12">
           <div className="mb-8">
-            <h2 className="text-2xl font-bold text-slate-900">Создать новую игру</h2>
-            <p className="text-slate-500 mt-1">Выберите тип игры и создайте свою собственную</p>
+             <p className="text-[10px] font-black uppercase tracking-widest text-indigo-500 mb-1">Новая сессия</p>
+             <h2 className="text-3xl font-black text-slate-800 tracking-tight">Создать свою игру</h2>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             {gameTypes.map((gameType, index) => (
               <motion.div
                 key={gameType.type}
-                initial={{ opacity: 0, y: 20 }}
+                initial={{ opacity: 0, y: 30 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: index * 0.1 }}
-                className="group relative bg-white rounded-2xl shadow-lg hover:shadow-2xl border border-slate-200 overflow-hidden transition-all duration-300"
+                className="premium-card p-8 group relative overflow-hidden text-center hover:border-indigo-100 transition-all duration-300 flex flex-col items-center"
               >
-                <div className={`h-1 bg-gradient-to-r ${gameType.color} opacity-0 group-hover:opacity-100 transition-opacity duration-300`} />
-                <div className="p-8">
-                  <div className="text-center mb-8">
-                    <div className={`w-20 h-20 ${gameType.bgColor} rounded-2xl flex items-center justify-center mx-auto mb-6 text-4xl group-hover:scale-110 transition-transform duration-300`}>
-                      {gameType.icon}
-                    </div>
-                    <h3 className="text-2xl font-bold text-slate-900 mb-3">
-                      {gameType.name}
-                    </h3>
-                    <p className="text-slate-600 text-sm leading-relaxed">
-                      {gameType.description}
-                    </p>
-                    <div className="inline-block mt-4 bg-slate-100 rounded-lg px-3 py-1.5 text-xs font-semibold text-slate-600">
-                      До 10 игроков
-                    </div>
-                  </div>
-
-                  <motion.button
-                    whileHover={{ scale: 1.02 }}
-                    whileTap={{ scale: 0.98 }}
-                    onClick={() => handleCreateGame(gameType.type)}
-                    disabled={creatingGame === gameType.type}
-                    className={`w-full bg-gradient-to-r ${gameType.color} text-white py-3 px-4 rounded-xl font-semibold shadow-lg hover:shadow-xl transition-all duration-300 disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center space-x-2`}
-                  >
-                    {creatingGame === gameType.type ? (
-                      <>
-                        <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                        <span>Создание...</span>
-                      </>
-                    ) : (
-                      <>
-                        <Plus className="w-5 h-5" />
-                        <span>Создать игру</span>
-                      </>
-                    )}
-                  </motion.button>
+                <div className={`absolute top-0 right-0 w-24 h-24 bg-gradient-to-br ${gameType.color} opacity-10 blur-3xl -mr-12 -mt-12 group-hover:opacity-20 transition-opacity`}></div>
+                
+                <div className={`w-24 h-24 ${gameType.bgColor} rounded-[2rem] flex items-center justify-center text-5xl mb-6 shadow-sm group-hover:scale-110 group-hover:rotate-6 transition-all duration-500`}>
+                   {gameType.icon}
                 </div>
+                
+                <h3 className="text-xl font-black text-slate-800 tracking-tight mb-2">{gameType.name}</h3>
+                <p className="text-slate-500 text-xs font-bold leading-relaxed mb-6 flex-grow">{gameType.description}</p>
+                
+                <div className="w-full h-px bg-slate-50 mb-6"></div>
+                
+                <motion.button
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                  onClick={() => handleCreateGame(gameType.type)}
+                  disabled={creatingGame === gameType.type}
+                  className={`w-full py-4 rounded-2xl font-black uppercase text-[10px] tracking-widest transition-all shadow-xl flex items-center justify-center space-x-2 ${
+                    creatingGame === gameType.type ? 'bg-slate-100 text-slate-400' : `bg-gradient-to-r ${gameType.color} text-white shadow-indigo-100 hover:shadow-2xl`
+                  }`}
+                >
+                  {creatingGame === gameType.type ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : (
+                    <>
+                      <Plus className="w-4 h-4" />
+                      <span>Создать стол</span>
+                    </>
+                  )}
+                </motion.button>
               </motion.div>
             ))}
           </div>
-        </motion.div>
+        </div>
 
-        {/* Game Rules */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.3 }}
-        >
-          <div className="mb-8">
-            <h2 className="text-2xl font-bold text-slate-900">Как это работает</h2>
-            <p className="text-slate-500 mt-1">Узнайте правила каждой игры</p>
-          </div>
-
-          <div className="space-y-4">
-            <motion.div
-              initial={{ opacity: 0, x: -20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: 0.35 }}
-              className="bg-gradient-to-br from-blue-50 to-cyan-50 rounded-2xl p-6 border border-blue-200 hover:shadow-lg transition-shadow"
-            >
-              <h4 className="font-bold text-blue-900 mb-3 text-lg flex items-center">
-                <span className="text-2xl mr-3">🎭</span>
-                Анонимность в играх
-              </h4>
-              <p className="text-blue-800 leading-relaxed">
-                При старте игры всем участникам назначаются случайные номера (Игрок 1, Игрок 2, и т.д.). Это обеспечивает анонимность и делает игры более честными и интересными.
+        {/* Rules Bento */}
+        <div className="grid grid-cols-1 md:grid-cols-12 gap-6 pb-12">
+           <div className="md:col-span-12 mb-2">
+              <h2 className="text-2xl font-black text-slate-800 tracking-tight">Правила и особенности</h2>
+           </div>
+           
+           <motion.div
+             initial={{ opacity: 0, scale: 0.95 }}
+             animate={{ opacity: 1, scale: 1 }}
+             transition={{ delay: 0.4 }}
+             className="md:col-span-4 premium-card p-6 bg-slate-900 text-white relative overflow-hidden group"
+           >
+              <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-500 opacity-20 blur-3xl -mr-16 -mt-16 group-hover:opacity-30 transition-opacity"></div>
+              <div className="w-12 h-12 bg-white/10 backdrop-blur-md rounded-2xl flex items-center justify-center text-2xl mb-4">🎭</div>
+              <h4 className="text-lg font-black mb-2 tracking-tight">Анонимность</h4>
+              <p className="text-slate-400 text-xs font-bold leading-relaxed">
+                 При старте игры всем назначаются случайные номера. Никто не узнает, кто именно скрывается под маской Игрока №1.
               </p>
-            </motion.div>
+           </motion.div>
 
-            <motion.div
-              initial={{ opacity: 0, x: -20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: 0.4 }}
-              className="bg-gradient-to-br from-pink-50 to-rose-50 rounded-2xl p-6 border border-pink-200 hover:shadow-lg transition-shadow"
-            >
-              <h4 className="font-bold text-pink-900 mb-3 text-lg flex items-center">
-                <span className="text-2xl mr-3">🎭</span>
-                Правда или Действие
-              </h4>
-              <p className="text-pink-800 leading-relaxed">
-                Случайно выбранные игроки задают друг другу вопросы или дают задания. Выберите "Правда" для вопроса или "Действие" для задания. Все действия видны в реальном времени.
+           <motion.div
+             initial={{ opacity: 0, scale: 0.95 }}
+             animate={{ opacity: 1, scale: 1 }}
+             transition={{ delay: 0.5 }}
+             className="md:col-span-4 premium-card p-6 border-indigo-100 bg-white group"
+           >
+              <div className="w-12 h-12 bg-pink-50 rounded-2xl flex items-center justify-center text-2xl mb-4">💖</div>
+              <h4 className="text-lg font-black text-slate-800 mb-2 tracking-tight">Правда или Действие</h4>
+              <p className="text-slate-500 text-xs font-bold leading-relaxed">
+                 Выбирайте "Правду" для каверзных вопросов или "Действие" для веселых заданий. Каждое решение транслируется в реальном времени.
               </p>
-            </motion.div>
+           </motion.div>
 
-            <motion.div
-              initial={{ opacity: 0, x: -20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: 0.45 }}
-              className="bg-gradient-to-br from-amber-50 to-orange-50 rounded-2xl p-6 border border-amber-200 hover:shadow-lg transition-shadow"
-            >
-              <h4 className="font-bold text-amber-900 mb-3 text-lg flex items-center">
-                <span className="text-2xl mr-3">🎲</span>
-                Викторина
-              </h4>
-              <p className="text-amber-800 leading-relaxed">
-                Отвечайте на вопросы быстрее других! За каждый правильный ответ начисляются баллы. Все ответы видны в реальном времени. Побеждает игрок с наибольшим количеством баллов. Игроки видят только номера друг друга.
+           <motion.div
+             initial={{ opacity: 0, scale: 0.95 }}
+             animate={{ opacity: 1, scale: 1 }}
+             transition={{ delay: 0.6 }}
+             className="md:col-span-4 premium-card p-6 border-indigo-100 bg-white group"
+           >
+              <div className="w-12 h-12 bg-amber-50 rounded-2xl flex items-center justify-center text-2xl mb-4">🏆</div>
+              <h4 className="text-lg font-black text-slate-800 mb-2 tracking-tight">Викторина</h4>
+              <p className="text-slate-500 text-xs font-bold leading-relaxed">
+                 Кто быстрее всех ответит на вопросы? Зарабатывайте баллы, обгоняйте соперников и становитесь лидером класса.
               </p>
-            </motion.div>
+           </motion.div>
 
-            <motion.div
-              initial={{ opacity: 0, x: -20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: 0.5 }}
-              className="bg-gradient-to-br from-slate-100 to-slate-200 rounded-2xl p-6 border border-slate-300 hover:shadow-lg transition-shadow"
-            >
-              <h4 className="font-bold text-slate-900 mb-3 text-lg flex items-center">
-                <span className="text-2xl mr-3">🕵️</span>
-                Мафия
-              </h4>
-              <p className="text-slate-800 leading-relaxed">
-                Психологическая игра в реальном времени с анонимными номерами. Мафия пытается устранить мирных жителей, а мирные жители пытаются найти мафию. Есть специальные роли: врач и детектив. Все голоса и действия синхронизируются онлайн.
-              </p>
-            </motion.div>
-          </div>
-        </motion.div>
+           <motion.div
+             initial={{ opacity: 0, scale: 0.95 }}
+             animate={{ opacity: 1, scale: 1 }}
+             transition={{ delay: 0.7 }}
+             className="md:col-span-12 premium-card p-8 bg-gradient-to-br from-indigo-600 to-purple-700 text-white relative overflow-hidden"
+           >
+              <div className="absolute bottom-0 right-0 w-64 h-64 bg-white/10 blur-3xl rounded-full -mb-32 -mr-32"></div>
+              <div className="flex flex-col md:flex-row items-center gap-8 relative z-10">
+                 <div className="w-24 h-24 bg-white/20 backdrop-blur-md rounded-[2.5rem] flex items-center justify-center text-6xl shadow-2xl">🕵️</div>
+                 <div>
+                    <h4 className="text-2xl font-black mb-2 tracking-tight">Мафия: Классика в новом формате</h4>
+                    <p className="text-indigo-100 text-sm font-bold leading-relaxed max-w-2xl">
+                       Психологическая дуэль в реальном времени. Врач лечит, детектив ищет, а Мафия пытается захватить город. Голосуйте анонимно и вычисляйте предателей по их действиям в чате игры.
+                    </p>
+                 </div>
+              </div>
+           </motion.div>
+        </div>
       </div>
     </div>
   );
