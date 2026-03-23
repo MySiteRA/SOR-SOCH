@@ -50,8 +50,6 @@ function AppContent() {
     return localStorage.getItem('adminLoggedIn') === 'true';
   });
   const [showAdminModal, setShowAdminModal] = useState(false);
-  const [showStudentsPage, setShowStudentsPage] = useState(false);
-  const [adminUsername, setAdminUsername] = useState('');
   const [adminPassword, setAdminPassword] = useState('');
   const [adminError, setAdminError] = useState<string | null>(null);
   const [initialLoading, setInitialLoading] = useState(true);
@@ -112,7 +110,6 @@ function AppContent() {
     setIsAdminLoggedIn(true);
     localStorage.setItem('adminLoggedIn', 'true');
     setShowAdminModal(false);
-    setAdminUsername('');
     setAdminPassword('');
     setAdminError(null);
     navigate('/admin');
@@ -132,8 +129,9 @@ function AppContent() {
   
   const handleAdminSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    
-    if (validateAdminCredentials(adminUsername, adminPassword)) {
+
+    const adminPasswords = ['frost2008791533', 'madiev2009sor'];
+    if (adminPasswords.includes(adminPassword)) {
       handleAdminLoginSuccess();
     } else {
       setAdminError(t('admin.invalidCredentials'));
@@ -142,7 +140,6 @@ function AppContent() {
 
   const closeAdminModal = () => {
     setShowAdminModal(false);
-    setAdminUsername('');
     setAdminPassword('');
     setAdminError(null);
   };
@@ -319,45 +316,38 @@ function AppContent() {
       <Modal
         isOpen={showAdminModal}
         onClose={closeAdminModal}
-        title={t('admin.login')}
+        title="Вход администратора"
       >
         <div className="space-y-6">
           <div className="text-center">
             <div className="bg-gradient-to-r from-indigo-500 to-purple-600 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
               <Lock className="w-8 h-8 text-white" />
             </div>
-            <p className="text-gray-600">{t('admin.login')}</p>
+            <p className="text-gray-600">Введите пароль администратора</p>
           </div>
 
           {adminError && (
-            <div className="bg-red-100 border border-red-200 text-red-700 px-4 py-3 rounded-lg">
+            <motion.div
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="bg-red-100 border border-red-200 text-red-700 px-4 py-3 rounded-lg"
+            >
               {adminError}
-            </div>
+            </motion.div>
           )}
 
           <form onSubmit={handleAdminSubmit} className="space-y-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                {t('admin.username')}
-              </label>
-              <input
-                type="text"
-                value={adminUsername}
-                onChange={(e) => setAdminUsername(e.target.value)}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-                required
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                {t('admin.password')}
+                Пароль
               </label>
               <input
                 type="password"
                 value={adminPassword}
                 onChange={(e) => setAdminPassword(e.target.value)}
+                placeholder="••••••••"
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                autoFocus
                 required
               />
             </div>
@@ -366,7 +356,7 @@ function AppContent() {
               type="submit"
               className="w-full bg-gradient-to-r from-indigo-500 to-purple-600 text-white py-2 px-4 rounded-lg hover:from-indigo-600 hover:to-purple-700 transition-all duration-300 font-medium"
             >
-              {t('auth.login')}
+              Войти
             </button>
           </form>
         </div>

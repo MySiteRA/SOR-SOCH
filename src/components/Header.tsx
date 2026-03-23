@@ -12,9 +12,10 @@ import type { Student } from '../lib/supabase';
 interface HeaderProps {
   onShowAdminModal: () => void;
   onStudentLogin?: (student: Student, className: string) => void;
+  showAdminButton?: boolean;
 }
 
-export default function Header({ onShowAdminModal, onStudentLogin }: HeaderProps) {
+export default function Header({ onShowAdminModal, onStudentLogin, showAdminButton = false }: HeaderProps) {
   const { t } = useLanguage();
   const [showKeyModal, setShowKeyModal] = useState(false);
   const [savedStudent, setSavedStudent] = useState<{student: Student, className: string} | null>(null);
@@ -138,6 +139,7 @@ export default function Header({ onShowAdminModal, onStudentLogin }: HeaderProps
                 <span className="text-[11px] font-medium sm:hidden leading-none">{t('auth.enterKey')}?</span>
               </motion.button>
 
+<<<<<<< HEAD
               {/* Кнопка авторизации */}
               <motion.button
                 whileHover={{ scale: 1.02, y: -1 }}
@@ -149,6 +151,20 @@ export default function Header({ onShowAdminModal, onStudentLogin }: HeaderProps
                 <span className="text-xs sm:text-sm font-medium hidden sm:inline">{t('admin.login')}</span>
                 <span className="text-[11px] font-medium sm:hidden leading-none">{t('auth.login')}</span>
               </motion.button>
+=======
+              {showAdminButton && (
+                <motion.button
+                  whileHover={{ scale: 1.02, y: -1 }}
+                  whileTap={{ scale: 0.98 }}
+                  onClick={onShowAdminModal}
+                  className="flex items-center space-x-2 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white px-4 py-2 rounded-xl transition-all duration-300 shadow-lg hover:shadow-xl"
+                >
+                  <Shield className="w-4 h-4" />
+                  <span className="text-sm font-medium hidden sm:inline">{t('admin.login')}</span>
+                  <span className="text-sm font-medium sm:hidden">{t('auth.login')}</span>
+                </motion.button>
+              )}
+>>>>>>> d2b6ecfc1857db7139edc3caa4e6c1693abf4fdc
             </>
           ) : (
             /* Показываем индикатор загрузки пока проверяем сессию */

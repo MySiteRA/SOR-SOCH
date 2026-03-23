@@ -395,11 +395,18 @@ export default function HomePage({ onShowAdminModal, onStudentLogin }: HomePageP
   }
 
   return (
+<<<<<<< HEAD
     <div className="min-h-screen pb-safe">
       <Header 
         onShowAdminModal={onShowAdminModal} 
+=======
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-100">
+      <Header
+        onShowAdminModal={onShowAdminModal}
+>>>>>>> d2b6ecfc1857db7139edc3caa4e6c1693abf4fdc
         showBackButton={false}
         onStudentLogin={onStudentLogin}
+        showAdminButton={true}
       />
       
       <main className="container mx-auto px-4 py-16 md:py-24 max-w-7xl animate-card-appear">
